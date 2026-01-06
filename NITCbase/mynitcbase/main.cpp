@@ -33,9 +33,8 @@ int main(int argc, char *argv[])
 
   /*---------- StaticBuffer buffer;  --------*/
   unsigned char buffer[BLOCK_SIZE];
-  Disk::readBlock(buffer, 7000); // read the block into buffer
   char message[] = "hello";
-  memcpy(buffer + 20, message, 6); // buffer[20] = 'h' , buffer[21] = 'e' , => 1st param, pointer is 2nd paraam and 3rd param is its size => 'hello\0' is 6 bytes
+  memcpy(buffer + 20, message, 6); // buffer[20] = 'h' , buffer[21] = 'e' , => 1st param, pointer is 2nd param is msg and 3rd param is its size => 'hello\0' is 6 bytes
   Disk::writeBlock(buffer, 7000);  // write the buffer into that block
 
   // PRINTING THE MESSAGE AFTER RETRIEVING FROM THE BLOCK WE JUST WROTE INTO
