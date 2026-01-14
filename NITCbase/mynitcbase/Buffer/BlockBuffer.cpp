@@ -32,7 +32,7 @@ int BlockBuffer::getHeader(struct HeadInfo *head)
 }
 
 // load the record at slotNum into the argument pointer
-int RecBuffer::getRecord(union Attribute *rec, int slotNum)
+int RecBuffer::getRecord(union Attribute *rec, int slotNum) // copies disk → memory
 {
   struct HeadInfo head;
   unsigned char buffer[BLOCK_SIZE];
@@ -56,6 +56,24 @@ int RecBuffer::getRecord(union Attribute *rec, int slotNum)
   return SUCCESS;
 }
 
-int RecBuffer::setRecord(union Attribute *rec, int slotNum)
+int RecBuffer::setRecord(union Attribute *rec, int slotNum) // copies memory → disk
 {
+  struct HeadInfo head;
+  unsigned char buffer[BLOCK_SIZE];
+
+  this->getHeader(&head);
+
+  int attrCount = head.numAttrs;
+  int slotCount = head.numSlots;
+
+  Disk::readBlock(buffer, this->blockNum);
+
+  int recordSize = attrCount * ATTR_SIZE;
+  int offset = HEADER_SIZE + slotCount + (slotNum * recordSize);
+  unsigned char *slotPointer = buffer + offset;
+
+  memcpy(slotPointer, rec, recordSize);
+  Disk::writeBlock(buffer, this->blockNum);
+
+  return SUCCESS;
 }
