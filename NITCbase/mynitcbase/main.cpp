@@ -155,6 +155,7 @@ int main(int argc, char *argv[])
 {
   /*--------- Initialize the Run Copy of Disk ---------- */
   Disk disk_run;
+  StaticBuffer buffer;
 
   /*---------- StaticBuffer buffer;  --------*/
   // stage1();
@@ -162,7 +163,7 @@ int main(int argc, char *argv[])
   // BLOCK ALLOCATION MAP QN verification
   // stage1qn1();
 
-  // stage2();
+  stage2();
 
   // PRINTING SCHEMA QN
   // stage2qn1();
