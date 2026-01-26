@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
   // BLOCK ALLOCATION MAP QN verification
   // stage1qn1();
 
-  stage2();
+  // stage2();
 
   // PRINTING SCHEMA QN
   // stage2qn1();
@@ -171,8 +171,29 @@ int main(int argc, char *argv[])
   // SCHEMA UPDATION QN
   // stage2qn1();
 
-  return 0;
   /*------------- OpenRelTable cache ------------ */;
+  OpenRelTable cache;
 
+  for (int relId = 0; relId < 2; relId++)
+  {
+    RelCatEntry relCat;
+    if (RelCacheTable::getRelCatEntry(relId, &relCat) != SUCCESS)
+      continue;
+
+    printf("Relation: %s\n", relCat.relName);
+
+    for (int i = 0; i < relCat.numAttrs; i++)
+    {
+      AttrCatEntry attrCat;
+      if (AttrCacheTable::getAttrCatEntry(relId, i, &attrCat) != SUCCESS)
+        continue;
+
+      const char *type =
+          (attrCat.attrType == 1) ? "STR" : "NUM";
+      printf("  %s: %s\n", attrCat.attrName, type);
+    }
+    printf("\n");
+  }
+  return 0;
   // return FrontendInterface::handleFrontend(argc, argv); //later we will come back here
 }

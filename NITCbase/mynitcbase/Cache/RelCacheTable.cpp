@@ -1,3 +1,49 @@
 #include "RelCacheTable.h"
-
 #include <cstring>
+
+// ? BLUE ARE COMMENTS FOR STUDYING
+// * GREEN ARE FOR HEADINGS
+// ! RED ARE FOR SELF IMPLEMENTED CODE
+
+// * Relation Cache Table storage
+RelCacheEntry *RelCacheTable::relCache[MAX_OPEN];
+
+// ?
+// ? Get the relation catalog entry for the relation with rel-id `relId` from the cache
+// ? NOTE: this function expects the caller to allocate memory for `*relCatBuf`
+// * getRelCatEntry gets the rel cat entry of rel-id from cache
+int RelCacheTable::getRelCatEntry(int relId, RelCatEntry *relCatBuf)
+{
+  // ? check bounds: 0 <= relId < MAX_OPEN
+  if (relId < 0 || relId >= MAX_OPEN)
+    return E_OUTOFBOUND;
+
+  // ? if there's no entry at the rel-id, then relation is not open (not in cache)
+  if (relCache[relId] == nullptr)
+    return E_RELNOTOPEN;
+
+  // ? If exists, then copy the value to the relCatBuf argument
+  *relCatBuf = relCache[relId]->relCatEntry;
+
+  return SUCCESS;
+}
+
+// ? Converts a relation catalog record to RelCatEntry struct
+// ? We get the record as Attribute[] from the BlockBuffer.getRecord() function.
+// ? This function will convert that to a struct RelCatEntry type.
+// ? NOTE: this function expects the caller to allocate memory for `*relCatEntry`
+// * Populate(or convert) the record we received from BlockBuffer.getRecord fn into a RelCatEntry type
+void RelCacheTable::recordToRelCatEntry(union Attribute record[RELCAT_NO_ATTRS],
+                                        RelCatEntry *relCatEntry)
+{
+  // ? catalogs have different constants
+  // ? remember the attributes of relation catalog and attribute catalog
+
+  strcpy(relCatEntry->relName, record[RELCAT_REL_NAME_INDEX].sVal);
+  relCatEntry->numAttrs = (int)record[RELCAT_NO_ATTRIBUTES_INDEX].nVal;
+  relCatEntry->numRecs = (int)record[RELCAT_NO_RECORDS_INDEX].nVal;
+  relCatEntry->firstBlk = (int)record[RELCAT_FIRST_BLOCK_INDEX].nVal;
+  relCatEntry->lastBlk = (int)record[RELCAT_LAST_BLOCK_INDEX].nVal;
+  relCatEntry->numSlotsPerBlk =
+      (int)record[RELCAT_NO_SLOTS_PER_BLOCK_INDEX].nVal;
+}
