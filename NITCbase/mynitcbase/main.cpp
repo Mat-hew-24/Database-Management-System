@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
   /*------------- OpenRelTable cache ------------ */;
   OpenRelTable cache;
 
-  for (int relId = 0; relId < 2; relId++)
+  for (int relId = 0; relId < 3; relId++)
   {
     RelCatEntry relCat;
     if (RelCacheTable::getRelCatEntry(relId, &relCat) != SUCCESS)
