@@ -174,26 +174,26 @@ int main(int argc, char *argv[])
   /*------------- OpenRelTable cache ------------ */;
   OpenRelTable cache;
 
-  for (int relId = 0; relId < 3; relId++)
-  {
-    RelCatEntry relCat;
-    if (RelCacheTable::getRelCatEntry(relId, &relCat) != SUCCESS)
-      continue;
+  // for (int relId = 0; relId < 3; relId++)
+  // {
+  //   RelCatEntry relCat;
+  //   if (RelCacheTable::getRelCatEntry(relId, &relCat) != SUCCESS)
+  //     continue;
 
-    printf("Relation: %s\n", relCat.relName);
+  //   printf("Relation: %s\n", relCat.relName);
 
-    for (int i = 0; i < relCat.numAttrs; i++)
-    {
-      AttrCatEntry attrCat;
-      if (AttrCacheTable::getAttrCatEntry(relId, i, &attrCat) != SUCCESS)
-        continue;
+  //   for (int i = 0; i < relCat.numAttrs; i++)
+  //   {
+  //     AttrCatEntry attrCat;
+  //     if (AttrCacheTable::getAttrCatEntry(relId, i, &attrCat) != SUCCESS)
+  //       continue;
 
-      const char *type =
-          (attrCat.attrType == 1) ? "STR" : "NUM";
-      printf("  %s: %s\n", attrCat.attrName, type);
-    }
-    printf("\n");
-  }
-  return 0;
-  // return FrontendInterface::handleFrontend(argc, argv); //later we will come back here
+  //     const char *type =
+  //         (attrCat.attrType == 1) ? "STR" : "NUM";
+  //     printf("  %s: %s\n", attrCat.attrName, type);
+  //   }
+  //   printf("\n");
+  // }
+  // return 0;
+  return FrontendInterface::handleFrontend(argc, argv); // later we will come back here
 }

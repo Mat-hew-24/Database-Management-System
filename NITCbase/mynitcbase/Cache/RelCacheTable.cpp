@@ -47,3 +47,39 @@ void RelCacheTable::recordToRelCatEntry(union Attribute record[RELCAT_NO_ATTRS],
   relCatEntry->numSlotsPerBlk =
       (int)record[RELCAT_NO_SLOTS_PER_BLOCK_INDEX].nVal;
 }
+
+// ? $
+// ! ...................................................................................
+int RelCacheTable::getSearchIndex(int relId, RecId *searchIndex)
+{
+  if (relId < 0 || relId >= MAX_OPEN)
+    return E_OUTOFBOUND; // ? NOT A VALID RELID
+  if (relCache[relId] == nullptr)
+    return E_RELNOTOPEN; // ? NOT PRESENT IN RELCACHE (not open)
+  // ? copy the searchIndex field of the Relation Cache entry corresponding to input relId to the searchIndex variable.
+  *searchIndex = relCache[relId]->searchIndex;
+  return SUCCESS;
+}
+
+// sets the searchIndex for the relation corresponding to relId
+int RelCacheTable::setSearchIndex(int relId, RecId *searchIndex)
+{
+  if (relId < 0 || relId >= MAX_OPEN)
+    return E_OUTOFBOUND; // ? NOT A VALID RELID
+  if (relCache[relId] == nullptr)
+    return E_RELNOTOPEN;                       // ? NOT PRESENT IN RELCACHE (not open)
+  relCache[relId]->searchIndex = *searchIndex; // ? update the searchIndex value in the relCache for the relId to the searchIndex argument
+  return SUCCESS;
+}
+
+int RelCacheTable::resetSearchIndex(int relId)
+{
+  if (relId < 0 || relId >= MAX_OPEN)
+    return E_OUTOFBOUND; // ? NOT A VALID RELID
+  if (relCache[relId] == nullptr)
+    return E_RELNOTOPEN;                   // ? NOT PRESENT IN RELCACHE (not open)
+  relCache[relId]->searchIndex = {-1, -1}; // ? RecId is just a coordinate of type =>> {block,slot}
+  return SUCCESS;
+}
+
+// ! ...................................................................................
