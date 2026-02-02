@@ -1,0 +1,3 @@
+SELECT * FROM Events INTO null WHERE id>0
+SELECT * FROM Locations INTO null WHERE name!=none
+SELECT * FROM Participants INTO null WHERE regNo>0
