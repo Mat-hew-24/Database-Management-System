@@ -193,29 +193,29 @@ OpenRelTable::OpenRelTable()
 OpenRelTable::~OpenRelTable()
 {
   // question: close all open relations (from rel-id = 2 onwards. Why?)
-  for (int i = 2; i < MAX_OPEN; ++i)
+  for (int i = 0; i < MAX_OPEN; ++i)
   {
     if (!tableMetaInfo[i].free)
       OpenRelTable::closeRel(i); // ? we will implement this function later
   }
 
   // ? free all the memory that you allocated in the constructor
-  for (int i = 0; i < MAX_OPEN; i++)
-  {
-    if (RelCacheTable::relCache[i] != nullptr)
-    {
-      free(RelCacheTable::relCache[i]);
-      RelCacheTable::relCache[i] = nullptr;
-    }
-    AttrCacheEntry *curr = AttrCacheTable::attrCache[i];
-    while (curr != nullptr)
-    {
-      AttrCacheEntry *next = curr->next;
-      free(curr);
-      curr = next;
-    }
-    AttrCacheTable::attrCache[i] = nullptr;
-  }
+  // for (int i = 0; i < MAX_OPEN; i++)
+  // {
+  //   if (RelCacheTable::relCache[i] != nullptr)
+  //   {
+  //     free(RelCacheTable::relCache[i]);
+  //     RelCacheTable::relCache[i] = nullptr;
+  //   }
+  //   AttrCacheEntry *curr = AttrCacheTable::attrCache[i];
+  //   while (curr != nullptr)
+  //   {
+  //     AttrCacheEntry *next = curr->next;
+  //     free(curr);
+  //     curr = next;
+  //   }
+  //   AttrCacheTable::attrCache[i] = nullptr;
+  // }
 }
 // ! .............................................................................................
 
@@ -279,7 +279,7 @@ int OpenRelTable::openRel(char relName[ATTR_SIZE])
   if (relId == E_CACHEFULL)               // ? free slot not available */
     return E_CACHEFULL;
 
-  /****** Setting up Relation Cache entry for the relation ******/
+  // ****** Setting up Relation Cache entry for the relation ******/
   RecBuffer relCatBuffer(RELCAT_BLOCK);
   HeadInfo head;
   relCatBuffer.getHeader(&head);
@@ -376,14 +376,15 @@ int OpenRelTable::openRel(char relName[ATTR_SIZE])
 int OpenRelTable::closeRel(int relId)
 {
   if (relId == RELCAT_RELID || relId == ATTRCAT_RELID)
-    return E_NOTPERMITTED;
+    return E_NOTPERMITTED; // ? can't close relcat and attrcat
 
   if (relId < 0 || relId >= MAX_OPEN)
-    return E_OUTOFBOUND;
+    return E_OUTOFBOUND; // ? 0<=relId<MAX_OPEN
 
   if (tableMetaInfo[relId].free)
     return E_RELNOTOPEN;
 
+  // ? META INFO RESET
   tableMetaInfo[relId].free = true;
   tableMetaInfo[relId].relName[0] = '\0';
 

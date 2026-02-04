@@ -62,22 +62,29 @@ int RecBuffer::getRecord(union Attribute *rec, int slotNum) // copies disk → m
 
 int RecBuffer::setRecord(union Attribute *rec, int slotNum) // copies memory → disk
 {
-  struct HeadInfo head;
-  unsigned char buffer[BLOCK_SIZE];
+  unsigned char *bufferPtr;
 
+  int ret = loadBlockAndGetBufferPtr(&bufferPtr);
+  if (ret != SUCCESS)
+    return ret;
+
+  struct HeadInfo head;
   this->getHeader(&head);
 
   int attrCount = head.numAttrs;
   int slotCount = head.numSlots;
 
-  Disk::readBlock(buffer, this->blockNum);
+  if (slotNum < 0 || slotNum >= slotCount)
+    return E_OUTOFBOUND;
 
   int recordSize = attrCount * ATTR_SIZE;
   int offset = HEADER_SIZE + slotCount + (slotNum * recordSize);
-  unsigned char *slotPointer = buffer + offset;
+  unsigned char *slotPointer = bufferPtr + offset;
 
   memcpy(slotPointer, rec, recordSize);
-  Disk::writeBlock(buffer, this->blockNum);
+
+  // ? ^
+  StaticBuffer::setDirtyBit(this->blockNum);
 
   return SUCCESS;
 }
@@ -89,7 +96,17 @@ int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char **buffPtr)
 {
   // check whether the block is already present in the buffer using StaticBuffer.getBufferNum()
   int bufferNum = StaticBuffer::getBufferNum(this->blockNum);
-  if (bufferNum == E_BLOCKNOTINBUFFER)
+  if (bufferNum != E_BLOCKNOTINBUFFER)
+  {
+    // ? set the timestamp of the corresponding buffer to 0 and increment the timestamps of all other occupied buffers in BufferMetaInfo.
+    StaticBuffer::metainfo[bufferNum].timeStamp = 0;
+    for (int bufferidx = 0; bufferidx < BUFFER_CAPACITY; bufferidx++)
+    {
+      if (bufferidx != bufferNum && !StaticBuffer::metainfo[bufferidx].free)
+        StaticBuffer::metainfo[bufferidx].timeStamp++;
+    }
+  }
+  else
   {
     bufferNum = StaticBuffer::getFreeBuffer(this->blockNum);
     if (bufferNum == E_OUTOFBOUND)

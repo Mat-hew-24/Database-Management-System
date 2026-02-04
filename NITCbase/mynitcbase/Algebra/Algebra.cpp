@@ -1,53 +1,79 @@
 #include "Algebra.h"
+
+#include <cstdio>
 #include <cstring>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 
-/* used to select all the records that satisfy a condition.
-the arguments of the function are
-- srcRel - the source relation we want to select from
-- targetRel - the relation we want to select into. (ignore for now)
-- attr - the attribute that the condition is checking
-- op - the operator of the condition
-- strVal - the value that we want to compare against (represented as a string)
-*/
+#include "../BlockAccess/BlockAccess.h"
+#include "../Cache/RelCacheTable.h"
+#include "../Cache/AttrCacheTable.h"
+#include "../Cache/OpenRelTable.h"
 
-// ? $
-// ? will return if a string can be parsed as a floating point number
+#define COL_WIDTH 15
+
 bool isNumber(char *str)
 {
   int len;
   float ignore;
   /*
-    sscanf returns the number of elements read, so if there is no float matching
-    the first %f, ret will be 0, else it'll be 1
 
-    %n gets the number of characters read. this scanf sequence will read the
-    first float ignoring all the whitespace before and after. and the number of
-    characters read that far will be stored in len. if len == strlen(str), then
-    the string only contains a float with/without whitespace. else, there's other
-    characters.
+  sscanf returns the number of elements read, so if there is no float matching
+  the first %f, ret will be 0, else it'll be 1
+  %n gets the number of characters read. this scanf sequence will read the
+  first float ignoring all the whitespace before and after. and the number of
+  characters read that far will be stored in len. if len == strlen(str), then
+  the string only contains a float with/without whitespace. else, there's other
+  characters.
   */
   int ret = sscanf(str, "%f %n", &ignore, &len);
   return ret == 1 && len == strlen(str);
 }
 
-// ! ........................................................................................................
-int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr[ATTR_SIZE], int op, char strVal[ATTR_SIZE])
+/**
+ * @brief Performs a select operation on a relation based on a condition
+ *
+ * This function retrieves records from a source relation that satisfy a given
+ * condition and displays them in a tabular format. The condition is specified
+ * by an attribute name, an operation code, and a comparison value.
+ *
+ * @param srcRel     The name of the source relation to select from
+ * @param targetRel  The name of the target relation (currently unused in implementation)
+ * @param attr       The attribute name on which the condition is applied
+ * @param op         The operation code for the condition (e.g., equal, greater than, etc.)
+ * @param strVal     The value for condition comparison (as string)
+ *
+ * @note Algorithm Steps:
+ * @note 1. Get the relation id for source relation\n
+ * @note 2. Get the attribute catalog entry for the condition attribute
+ * @note 3. Convert the string value to Attribute type based on attribute type
+ * @note 4. Reset the search index for the source relation
+ * @note 5. Fetch the relation catalog entry
+ * @note 6. Print the attribute names as header
+ * @note 7. Perform linear search through the relation for matching records
+ * @note 8. For each matching record, fetch and print the record values
+ * @note ------------------------------------------------------------
+ * @note The function prints results to stdout in a table format with columns
+ *       separated by '|' characters
+ */
+int Algebra::select(char srcRel[ATTR_SIZE],
+                    char targetRel[ATTR_SIZE],
+                    char attr[ATTR_SIZE],
+                    int op,
+                    char strVal[ATTR_SIZE])
 {
-  int srcRelId = OpenRelTable::getRelId(srcRel); // we'll implement this later
+
+  int srcRelId = OpenRelTable::getRelId(srcRel);
   if (srcRelId == E_RELNOTOPEN)
     return E_RELNOTOPEN;
-  AttrCatEntry attrCatEntry;
-  // get the attribute catalog entry for attr, using AttrCacheTable::getAttrcatEntry()
-  //    return E_ATTRNOTEXIST if it returns the error
-  if (AttrCacheTable::getAttrCatEntry(srcRelId, attr, &attrCatEntry) != SUCCESS)
+
+  // get attribute catalog entry for condition attribute
+  AttrCatEntry condAttr;
+  if (AttrCacheTable::getAttrCatEntry(srcRelId, attr, &condAttr) != SUCCESS)
     return E_ATTRNOTEXIST;
 
-  /*** Convert strVal (string) to an attribute of data type NUMBER or STRING ***/
-  int type = attrCatEntry.attrType;
+  // convert string value to Attribute
   Attribute attrVal;
-  if (type == NUMBER)
+  if (condAttr.attrType == NUMBER)
   {
     if (!isNumber(strVal))
       return E_ATTRTYPEMISMATCH;
@@ -56,60 +82,77 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
   else
     strcpy(attrVal.sVal, strVal);
 
-  /*** Selecting records from the source relation ***/
-
-  // Before calling the search function, reset the search to start from the first hit
-  // using RelCacheTable::resetSearchIndex()
   RelCacheTable::resetSearchIndex(srcRelId);
-  RelCatEntry relCatEntry;
-  // get relCatEntry using RelCacheTable::getRelCatEntry()
-  if (RelCacheTable::getRelCatEntry(srcRelId, &relCatEntry) != SUCCESS)
+
+  RelCatEntry relCat;
+  if (RelCacheTable::getRelCatEntry(srcRelId, &relCat) != SUCCESS)
     return E_RELNOTOPEN;
-  /************************
-  The following code prints the contents of a relation directly to the output
-  console. Direct console output is not permitted by the actual the NITCbase
-  specification and the output can only be inserted into a new relation. We will
-  be modifying it in the later stages to match the specification.
-  ************************/
+
+  printf("\n");
 
   printf("|");
-  for (int i = 0; i < relCatEntry.numAttrs; ++i)
+  for (int i = 0; i < relCat.numAttrs; i++)
   {
-    AttrCatEntry attrCatEntry;
-    if (AttrCacheTable::getAttrCatEntry(srcRelId, i, &attrCatEntry) != SUCCESS) // ? get attrCatEntry at offset i using AttrCacheTable::getAttrCatEntry()
-      return E_ATTRNOTEXIST;
-
-    printf(" %s |", attrCatEntry.attrName);
+    for (int j = 0; j < COL_WIDTH + 2; j++)
+      printf("-");
+    printf("|");
   }
   printf("\n");
-  // ? fetch and print matching records
+
+  printf("|");
+  for (int i = 0; i < relCat.numAttrs; i++)
+  {
+    AttrCatEntry attrEntry;
+    if (AttrCacheTable::getAttrCatEntry(srcRelId, i, &attrEntry) != SUCCESS)
+      return E_ATTRNOTEXIST;
+    printf(" %-*s |", COL_WIDTH, attrEntry.attrName);
+  }
+  printf("\n");
+
+  printf("|");
+  for (int i = 0; i < relCat.numAttrs; i++)
+  {
+    for (int j = 0; j < COL_WIDTH + 2; j++)
+      printf("-");
+    printf("|");
+  }
+  printf("\n");
+
+  /* fetch and print matching records */
   while (true)
   {
     RecId recId = BlockAccess::linearSearch(srcRelId, attr, attrVal, op);
-    if (recId.block != -1 && recId.slot != -1)
-    {
-      RecBuffer buffer(recId.block);
-      Attribute record[relCatEntry.numAttrs];
-      buffer.getRecord(record, recId.slot); // ? get the record at searchRes using BlockBuffer.getRecord
-      // ? print the attribute values in the same format as above
-      printf("|");
-      for (int i = 0; i < relCatEntry.numAttrs; i++)
-      {
-        AttrCatEntry attrCatEntry;
-        if (AttrCacheTable::getAttrCatEntry(srcRelId, i, &attrCatEntry) != SUCCESS) // ? get attrCatEntry at offset i using AttrCacheTable::getAttrCatEntry()
-          return E_ATTRNOTEXIST;
 
-        if (attrCatEntry.attrType == NUMBER)
-          printf(" %g |", record[i].nVal);
-        else
-          printf(" %s |", record[i].sVal);
-      }
-      printf("\n");
+    if (recId.block == -1 && recId.slot == -1)
+      break; // no more records
+
+    RecBuffer rb(recId.block);
+
+    Attribute record[relCat.numAttrs];
+    rb.getRecord(record, recId.slot);
+
+    printf("|");
+    for (int i = 0; i < relCat.numAttrs; i++)
+    {
+      AttrCatEntry attrEntry;
+      if (AttrCacheTable::getAttrCatEntry(srcRelId, i, &attrEntry) != SUCCESS)
+        return E_ATTRNOTEXIST;
+      // printf("%d == %d\n",attrEntry.attrType,NUMBER);
+      if (attrEntry.attrType == NUMBER)
+        printf(" %-*g |", COL_WIDTH, record[i].nVal);
+      else
+        printf(" %-*s |", COL_WIDTH, record[i].sVal);
     }
-    else
-      break; // (all records over)
+    printf("\n");
   }
+  printf("|");
+  for (int i = 0; i < relCat.numAttrs; i++)
+  {
+    for (int j = 0; j < COL_WIDTH + 2; j++)
+      printf("-");
+    printf("|");
+  }
+  printf("\n\n");
 
   return SUCCESS;
 }
-// ! ........................................................................................................
