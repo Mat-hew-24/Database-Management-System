@@ -1,4 +1,6 @@
 #include "StaticBuffer.h"
+#include "stdlib.h"
+#include <cstring>
 
 // ? BLUE ARE COMMENTS FOR STUDYING
 // * GREEN ARE FOR HEADINGS
@@ -9,6 +11,7 @@
 // ? init blocks => BUFFERCAPACITY is 32blocks and nitcbase has 2048 bytes in each block
 unsigned char StaticBuffer::blocks[BUFFER_CAPACITY][BLOCK_SIZE];
 struct BufferMetaInfo StaticBuffer::metainfo[BUFFER_CAPACITY]; // ? extra info to track status
+unsigned char StaticBuffer::blockAllocMap[DISK_BLOCKS];        // ? &
 
 // * CONSTRUCTOR
 // ? => just set all blocks in buffer as free
@@ -21,6 +24,23 @@ StaticBuffer::StaticBuffer()
     metainfo[bufferidx].blockNum = -1;
     metainfo[bufferidx].timeStamp = -1;
   }
+  for (int i = 0; i < BLOCK_ALLOCATION_MAP_SIZE; i++)
+  {
+    unsigned char *bufferPtr = blocks[i];
+    Disk::readBlock(bufferPtr, i);
+
+    /* mark BAM blocks as occupied */
+    metainfo[i].free = false;
+    metainfo[i].dirty = false;
+    metainfo[i].blockNum = i;
+    metainfo[i].timeStamp = 0;
+  }
+
+  /* Step 3: copy BAM contents into blockAllocMap array */
+  memcpy(
+      blockAllocMap,
+      blocks[0],
+      BLOCK_ALLOCATION_MAP_SIZE * BLOCK_SIZE);
 }
 
 // *  DESTRUCTOR
