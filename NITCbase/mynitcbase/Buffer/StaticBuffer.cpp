@@ -2,22 +2,13 @@
 #include "stdlib.h"
 #include <cstring>
 
-// ? BLUE ARE COMMENTS FOR STUDYING
-// * GREEN ARE FOR HEADINGS
-// ! RED ARE FOR SELF IMPLEMENTED CODE
-
-// ? inside the same class methods u dont have to use CLASS::METHOD
-
-// ? init blocks => BUFFERCAPACITY is 32blocks and nitcbase has 2048 bytes in each block
 unsigned char StaticBuffer::blocks[BUFFER_CAPACITY][BLOCK_SIZE];
-struct BufferMetaInfo StaticBuffer::metainfo[BUFFER_CAPACITY]; // ? extra info to track status
-unsigned char StaticBuffer::blockAllocMap[DISK_BLOCKS];        // ? &
+struct BufferMetaInfo StaticBuffer::metainfo[BUFFER_CAPACITY];
+unsigned char StaticBuffer::blockAllocMap[DISK_BLOCKS];
 
-// * CONSTRUCTOR
-// ? => just set all blocks in buffer as free
 StaticBuffer::StaticBuffer()
 {
-  for (int bufferidx = 0; bufferidx < BUFFER_CAPACITY; bufferidx++) // ? ^
+  for (int bufferidx = 0; bufferidx < BUFFER_CAPACITY; bufferidx++)
   {
     metainfo[bufferidx].free = true;
     metainfo[bufferidx].dirty = false;
@@ -28,25 +19,19 @@ StaticBuffer::StaticBuffer()
   {
     unsigned char *bufferPtr = blocks[i];
     Disk::readBlock(bufferPtr, i);
-
-    /* mark BAM blocks as occupied */
     metainfo[i].free = false;
     metainfo[i].dirty = false;
     metainfo[i].blockNum = i;
     metainfo[i].timeStamp = 0;
   }
-
-  /* Step 3: copy BAM contents into blockAllocMap array */
-  memcpy(
-      blockAllocMap,
-      blocks[0],
-      BLOCK_ALLOCATION_MAP_SIZE * BLOCK_SIZE);
+  memcpy(blockAllocMap, blocks[0], BLOCK_ALLOCATION_MAP_SIZE * BLOCK_SIZE);
 }
 
-// *  DESTRUCTOR
-// ? ^
 StaticBuffer::~StaticBuffer()
 {
+  memcpy(blocks[0], blockAllocMap, BLOCK_ALLOCATION_MAP_SIZE * BLOCK_SIZE);
+  for (int i = 0; i < BLOCK_ALLOCATION_MAP_SIZE; i++)
+    Disk::writeBlock(blocks[i], i);
   for (int bufferidx = 0; bufferidx < BUFFER_CAPACITY; bufferidx++)
   {
     if (metainfo[bufferidx].free == false && metainfo[bufferidx].dirty == true)
@@ -54,21 +39,15 @@ StaticBuffer::~StaticBuffer()
   }
 }
 
-// ? ^
-// *  getFreeBuffer fn for StaticBuffer Class
 int StaticBuffer::getFreeBuffer(int blockNum)
 {
-  if (blockNum < 0 || blockNum >= DISK_BLOCKS) // ? if block does not belong in {0,1,2,...,8191} then exit with error
+  if (blockNum < 0 || blockNum >= DISK_BLOCKS)
     return E_OUTOFBOUND;
-
-  // ? increase the timeStamp in metaInfo of all occupied buffers.
   for (int bufferidx = 0; bufferidx < BUFFER_CAPACITY; bufferidx++)
   {
     if (!metainfo[bufferidx].free)
       metainfo[bufferidx].timeStamp++;
   }
-
-  // ? let bufferNum be used to store the buffer number of the free/freed buffer.
   int bufferNum = -1;
   for (int bufferidx = 0; bufferidx < BUFFER_CAPACITY; bufferidx++)
   {
@@ -99,25 +78,18 @@ int StaticBuffer::getFreeBuffer(int blockNum)
   return bufferNum;
 }
 
-// ? Get the buffer index where a particular block is stored or E_BLOCKNOTINBUFFER otherwise
-// * getBufferNum in static buffer class
-// ! ................................................................
 int StaticBuffer::getBufferNum(int blockNum)
 {
-  if (blockNum < 0 || blockNum >= DISK_BLOCKS) // ? 0<=blockNum<=8191
+  if (blockNum < 0 || blockNum >= DISK_BLOCKS)
     return E_OUTOFBOUND;
-  //? find and return the bufferIndex which corresponds to blockNum (check metainfo), else exit code
   for (int bufferidx = 0; bufferidx < BUFFER_CAPACITY; bufferidx++)
   {
-    if (metainfo[bufferidx].free == false && metainfo[bufferidx].blockNum == blockNum) // ? skip free slots, and check if exists,then blocknums match
+    if (metainfo[bufferidx].free == false && metainfo[bufferidx].blockNum == blockNum)
       return bufferidx;
   }
   return E_BLOCKNOTINBUFFER;
 }
-// ! ................................................................
 
-// ? ^
-// ! ..........................................
 int StaticBuffer::setDirtyBit(int blockNum)
 {
   int bufferNum = getBufferNum(blockNum);
@@ -129,4 +101,3 @@ int StaticBuffer::setDirtyBit(int blockNum)
     metainfo[bufferNum].dirty = true;
   return SUCCESS;
 }
-// ! ..........................................
