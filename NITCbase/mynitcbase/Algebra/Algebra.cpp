@@ -160,11 +160,11 @@ int Algebra::insert(char relName[ATTR_SIZE], int nAttrs, char record[][ATTR_SIZE
   int relId = OpenRelTable::getRelId(relName);
   if (relId == E_RELNOTOPEN)
     return E_RELNOTOPEN;
-  RelCatEntry *Relentry;
-  int ret = RelCacheTable::getRelCatEntry(relId, Relentry);
+  RelCatEntry Relentry;
+  int ret = RelCacheTable::getRelCatEntry(relId, &Relentry);
   if (ret != SUCCESS)
     return ret;
-  if (nAttrs != Relentry->numAttrs)
+  if (nAttrs != Relentry.numAttrs)
     return E_NATTRMISMATCH;
   union Attribute recordValues[nAttrs];
   for (int i = 0; i < nAttrs; i++)

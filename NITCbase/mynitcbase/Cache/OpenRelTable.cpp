@@ -11,6 +11,7 @@ OpenRelTable::OpenRelTable()
     RelCacheTable::relCache[i] = nullptr;
     AttrCacheTable::attrCache[i] = nullptr;
     tableMetaInfo[i].free = true;
+    tableMetaInfo[i].relName[0] = '\0';
   }
 
   RecBuffer relCatBlock(RELCAT_BLOCK);
@@ -144,7 +145,10 @@ OpenRelTable::OpenRelTable()
   AttrCacheTable::attrCache[STUDENT_RELID] = student_head;
 
   tableMetaInfo[RELCAT_RELID].free = false;
+  strcpy(tableMetaInfo[RELCAT_RELID].relName, RELCAT_RELNAME);
+
   tableMetaInfo[ATTRCAT_RELID].free = false;
+  strcpy(tableMetaInfo[ATTRCAT_RELID].relName, ATTRCAT_RELNAME);
 }
 
 OpenRelTable::~OpenRelTable()

@@ -187,7 +187,7 @@ int BlockAccess::insert(int relId, Attribute *record)
     ret = buffer.getHeader(&head1);
     if (ret != SUCCESS)
       return ret;
-    unsigned char *slotMap;
+    unsigned char slotMap[numOfSlots];
     ret = buffer.getSlotMap(slotMap);
     if (ret != SUCCESS)
       return ret;
@@ -271,4 +271,6 @@ int BlockAccess::insert(int relId, Attribute *record)
   ret = RelCacheTable::setRelCatEntry(relId, &relEntry);
   if (ret != SUCCESS)
     return ret;
+
+  return SUCCESS;
 }
