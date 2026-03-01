@@ -195,3 +195,27 @@ int compareAttrs(union Attribute attr1, union Attribute attr2, int attrType)
     return -1;
   return 0;
 }
+
+int RecBuffer::setSlotMap(unsigned char *slotMap)
+{
+  unsigned char *bufferPtr;
+  int ret = loadBlockAndGetBufferPtr(&bufferPtr);
+  if (ret != SUCCESS)
+    return ret;
+  struct HeadInfo head;
+  ret = this->getHeader(&head);
+  if (ret != SUCCESS)
+    return ret;
+  int numSlots = head.numSlots;
+  unsigned char *slotMapFront = bufferPtr + HEADER_SIZE;
+  memcpy(slotMapFront, slotMap, numSlots);
+  ret = StaticBuffer::setDirtyBit(this->blockNum);
+  if (ret != SUCCESS)
+    return ret;
+  return SUCCESS;
+}
+
+int BlockBuffer::getBlockNum()
+{
+  return this->blockNum;
+}
