@@ -248,6 +248,15 @@ int OpenRelTable::closeRel(int relId)
   if (tableMetaInfo[relId].free)
     return E_RELNOTOPEN;
 
+  if (RelCacheTable::relCache[relId]->dirty == true)
+  {
+    RecId recId = RelCacheTable::relCache[relId]->recId;
+    union Attribute record[RELCAT_NO_ATTRS];
+    RelCacheTable::relCatEntryToRecord(&RelCacheTable::relCache[relId]->relCatEntry, record);
+    RecBuffer relCatBlock(recId.block);
+    relCatBlock.setRecord(record, recId.slot);
+  }
+
   tableMetaInfo[relId].free = true;
   tableMetaInfo[relId].relName[0] = '\0';
 
