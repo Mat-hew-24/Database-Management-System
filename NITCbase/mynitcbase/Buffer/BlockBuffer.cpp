@@ -2,8 +2,12 @@
 #include <cstdlib>
 #include <cstring>
 
+// * C++ HAS AUTO INTEGER PROMOTION(LIKE LOOK AT BLOCK BUFFER C1)
+
 BlockBuffer::BlockBuffer(char blockType)
 {
+  int blockVal = this->getFreeBlock(blockType);
+  this->blockNum = blockVal;
 }
 
 RecBuffer::RecBuffer() : BlockBuffer('R') {}
@@ -63,6 +67,40 @@ int BlockBuffer::setBlockType(int blockType)
   if (dirtyBitChecker != SUCCESS)
     return dirtyBitChecker;
   return SUCCESS;
+}
+
+int BlockBuffer::getFreeBlock(int blockType)
+{
+  int freeBlock = -1;
+  for (int i = 0; i < DISK_BLOCKS; i++)
+  {
+    if (StaticBuffer::blockAllocMap[i] == 0)
+    {
+      freeBlock = i;
+      break;
+    }
+  }
+  if (freeBlock == -1)
+    return E_DISKFULL;
+  this->blockNum = freeBlock;
+  int bufferNum = StaticBuffer::getFreeBuffer(this->blockNum);
+  if (bufferNum < 0)
+    return bufferNum;
+  struct HeadInfo head;
+  head.blockType = blockType;
+  head.lblock = -1;
+  head.rblock = -1;
+  head.pblock = -1;
+  head.numAttrs = 0;
+  head.numEntries = 0;
+  head.numSlots = 0;
+  int ret = this->setHeader(&head);
+  if (ret != SUCCESS)
+    return ret;
+  ret = this->setBlockType(blockType);
+  if (ret != SUCCESS)
+    return ret;
+  return this->blockNum;
 }
 
 int RecBuffer::getRecord(union Attribute *rec, int slotNum)
