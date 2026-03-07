@@ -267,3 +267,14 @@ int BlockAccess::insert(int relId, Attribute *record)
 
   return SUCCESS;
 }
+
+int BlockAccess::search(int relId, Attribute *record, char attrName[ATTR_SIZE], Attribute attrVal, int op)
+{
+  RecId recId;
+  recId = linearSearch(relId, attrName, attrVal, op);
+  if (recId.block == -1 && recId.slot == -1)
+    return E_NOTFOUND;
+  RecBuffer buffer(recId.block);
+  int ret = buffer.getRecord(record, recId.slot);
+  return ret;
+}
