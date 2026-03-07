@@ -1,45 +1,35 @@
 #include "Schema.h"
 #include <cmath>
 #include <cstring>
+#include <vector>
+#include <unordered_set>
+#include <string>
 
-// ? %
-// ! ...........................................................
-int Schema::openRel(char relName[ATTR_SIZE]) // ? the OpenRelTable::openRel() function returns the rel-id if successful a valid rel-id will be within the range 0 <= relId < MAX_OPEN and any error codes will be negative
+int Schema::openRel(char relName[ATTR_SIZE])
 {
   int ret = OpenRelTable::openRel(relName);
   if (ret >= 0)
     return SUCCESS;
-  return ret; // ? otherwise it returns an error message
+  return ret;
 }
-// ! ...........................................................
 
-// ! ...........................................................
 int Schema::closeRel(char relName[ATTR_SIZE])
-// ? this function returns the rel-id of a relation if it is open or E_RELNOTOPEN if it is not. we will implement this later.
 {
-  if (strcmp(relName, RELCAT_RELNAME) == 0 || strcmp(relName, ATTRCAT_RELNAME) == 0) // ? relation is relation catalog or attribute catalog
+  if (strcmp(relName, RELCAT_RELNAME) == 0 || strcmp(relName, ATTRCAT_RELNAME) == 0)
     return E_NOTPERMITTED;
   int relId = OpenRelTable::getRelId(relName);
   RelCatEntry relCatEntry;
-  if (relId == E_RELNOTOPEN) // ? relation is not open
+  if (relId == E_RELNOTOPEN)
     return E_RELNOTOPEN;
   return OpenRelTable::closeRel(relId);
 }
-// ! ...........................................................
 
-// ? ^ => 2 Functions
-// ! ...........................................................
 int Schema::renameRel(char oldRelName[ATTR_SIZE], char newRelName[ATTR_SIZE])
 {
-  // ? if the oldRelName or newRelName is either Relation Catalog or Attribute Catalog, return E_NOTPERMITTED
-  // ? (check if the relation names are either "RELATIONCAT" and "ATTRIBUTECAT". you may use the following constants: RELCAT_RELNAME and ATTRCAT_RELNAME)
   if (strcmp(oldRelName, RELCAT_RELNAME) == 0 || strcmp(oldRelName, ATTRCAT_RELNAME) == 0 || strcmp(newRelName, RELCAT_RELNAME) == 0 || strcmp(newRelName, ATTRCAT_RELNAME) == 0)
     return E_NOTPERMITTED;
-
-  // ? if the relation is open (check if OpenRelTable::getRelId() returns E_RELNOTOPEN) return E_RELOPEN
   if (OpenRelTable::getRelId(oldRelName) != E_RELNOTOPEN)
     return E_RELOPEN;
-
   int retVal = BlockAccess::renameRelation(oldRelName, newRelName);
   return retVal;
 }
@@ -50,9 +40,63 @@ int Schema::renameAttr(char *relName, char *oldAttrName, char *newAttrName)
     return E_NOTPERMITTED;
   if (OpenRelTable::getRelId(relName) != E_RELNOTOPEN)
     return E_RELOPEN;
-
-  // Call BlockAccess::renameAttribute with appropriate arguments.
   int retVal = BlockAccess::renameAttribute(relName, oldAttrName, newAttrName);
   return retVal;
 }
-// ! ...........................................................
+
+int Schema::createRel(char relName[], int nAttrs, char attrs[][ATTR_SIZE], int attrtype[])
+{
+  union Attribute relNameAsAttribute;
+  strcpy(relNameAsAttribute.sVal, relName);
+  RecId targetRelId;
+  RelCacheTable::resetSearchIndex(RELCAT_RELID);
+  targetRelId = BlockAccess::linearSearch(RELCAT_RELID, (char *)RELCAT_ATTR_RELNAME, relNameAsAttribute, EQ);
+  if (targetRelId.block != -1 && targetRelId.slot != -1)
+    return E_RELEXIST;
+  std::unordered_set<std::string> seen;
+  for (int i = 0; i < nAttrs; i++)
+  {
+    if (seen.find(attrs[i]) != seen.end())
+      return E_DUPLICATEATTR;
+    seen.insert(attrs[i]);
+  }
+  union Attribute relCatRecord[RELCAT_NO_ATTRS];
+  strcpy(relCatRecord[RELCAT_REL_NAME_INDEX].sVal, relName);
+  relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal = nAttrs;
+  relCatRecord[RELCAT_NO_RECORDS_INDEX].nVal = 0;
+  relCatRecord[RELCAT_FIRST_BLOCK_INDEX].nVal = -1;
+  relCatRecord[RELCAT_LAST_BLOCK_INDEX].nVal = -1;
+  relCatRecord[RELCAT_NO_SLOTS_PER_BLOCK_INDEX].nVal = floor(2016 / (16 * nAttrs - 1));
+
+  int ret = BlockAccess::insert(RELCAT_RELID, relCatRecord);
+  if (ret != SUCCESS)
+    return ret;
+
+  for (int i = 0; i < nAttrs; i++)
+  {
+    union Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
+    strcpy(attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal, relName);
+    strcpy(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, attrs[i]);
+    attrCatRecord[ATTRCAT_ATTR_TYPE_INDEX].nVal = attrtype[i];
+    attrCatRecord[ATTRCAT_PRIMARY_FLAG_INDEX].nVal = -1;
+    attrCatRecord[ATTRCAT_ROOT_BLOCK_INDEX].nVal = -1;
+    attrCatRecord[ATTRCAT_OFFSET_INDEX].nVal = i;
+    ret = BlockAccess::insert(ATTRCAT_RELID, attrCatRecord);
+    if (ret != SUCCESS)
+    {
+      Schema::deleteRel(relName);
+      return ret;
+    }
+    return SUCCESS;
+  }
+}
+
+int Schema::deleteRel(char *relName)
+{
+  if (strcmp(relName, RELCAT_RELNAME) == 0 || strcmp(relName, ATTRCAT_RELNAME) == 0)
+    return E_NOTPERMITTED;
+  int relId = OpenRelTable::getRelId(relName);
+  if (relId != E_RELNOTOPEN)
+    return E_RELOPEN;
+  return BlockAccess::deleteRelation(relName);
+}
