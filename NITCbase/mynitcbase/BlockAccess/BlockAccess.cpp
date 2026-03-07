@@ -34,13 +34,6 @@ RecId BlockAccess::linearSearch(int relId, char attrName[ATTR_SIZE], union Attri
     unsigned char slotMap[head.numSlots];
     buffer.getSlotMap(slotMap);
 
-    if (slot >= head.numSlots)
-    {
-      block = head.rblock;
-      slot = 0;
-      continue;
-    }
-
     while (slot < head.numSlots)
     {
       if (slotMap[slot] == SLOT_UNOCCUPIED)
@@ -208,7 +201,7 @@ int BlockAccess::insert(int relId, Attribute *record)
   {
     if (relId == RELCAT_RELID)
       return E_MAXRELATIONS;
-    RecBuffer newBlock(REC);
+    RecBuffer newBlock;
     int newBlockNum = newBlock.getBlockNum();
     if (newBlockNum == E_DISKFULL)
       return E_DISKFULL;

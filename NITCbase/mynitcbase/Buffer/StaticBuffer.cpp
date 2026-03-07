@@ -29,14 +29,14 @@ StaticBuffer::StaticBuffer()
 
 StaticBuffer::~StaticBuffer()
 {
-  memcpy(blocks[0], blockAllocMap, BLOCK_ALLOCATION_MAP_SIZE * BLOCK_SIZE);
-  for (int i = 0; i < BLOCK_ALLOCATION_MAP_SIZE; i++)
-    Disk::writeBlock(blocks[i], i);
   for (int bufferidx = 0; bufferidx < BUFFER_CAPACITY; bufferidx++)
   {
     if (metainfo[bufferidx].free == false && metainfo[bufferidx].dirty == true)
       Disk::writeBlock(StaticBuffer::blocks[bufferidx], metainfo[bufferidx].blockNum);
   }
+  memcpy(blocks[0], blockAllocMap, BLOCK_ALLOCATION_MAP_SIZE * BLOCK_SIZE);
+  for (int i = 0; i < BLOCK_ALLOCATION_MAP_SIZE; i++)
+    Disk::writeBlock(blocks[i], i);
 }
 
 int StaticBuffer::getFreeBuffer(int blockNum)

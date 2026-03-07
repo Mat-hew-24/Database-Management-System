@@ -2,8 +2,6 @@
 #include <cstdlib>
 #include <cstring>
 
-// * C++ HAS AUTO INTEGER PROMOTION(LIKE LOOK AT BLOCK BUFFER C1)
-
 BlockBuffer::BlockBuffer(char blockType)
 {
   int blockVal = this->getFreeBlock(blockType);
@@ -74,7 +72,7 @@ int BlockBuffer::getFreeBlock(int blockType)
   int freeBlock = -1;
   for (int i = 0; i < DISK_BLOCKS; i++)
   {
-    if (StaticBuffer::blockAllocMap[i] == 0)
+    if (StaticBuffer::blockAllocMap[i] == UNUSED_BLK)
     {
       freeBlock = i;
       break;
@@ -91,9 +89,9 @@ int BlockBuffer::getFreeBlock(int blockType)
   head.lblock = -1;
   head.rblock = -1;
   head.pblock = -1;
-  head.numAttrs = 0;
+  head.numAttrs = -1;
+  head.numSlots = -1;
   head.numEntries = 0;
-  head.numSlots = 0;
   int ret = this->setHeader(&head);
   if (ret != SUCCESS)
     return ret;
