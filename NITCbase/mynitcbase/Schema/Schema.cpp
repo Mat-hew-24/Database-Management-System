@@ -53,20 +53,22 @@ int Schema::createRel(char relName[], int nAttrs, char attrs[][ATTR_SIZE], int a
   targetRelId = BlockAccess::linearSearch(RELCAT_RELID, (char *)RELCAT_ATTR_RELNAME, relNameAsAttribute, EQ);
   if (targetRelId.block != -1 && targetRelId.slot != -1)
     return E_RELEXIST;
-  std::unordered_set<std::string> seen;
   for (int i = 0; i < nAttrs; i++)
   {
-    if (seen.find(attrs[i]) != seen.end())
-      return E_DUPLICATEATTR;
-    seen.insert(attrs[i]);
+    for (int j = i + 1; j < nAttrs; j++)
+    {
+      if (strcmp(attrs[i], attrs[j]) == 0)
+        return E_DUPLICATEATTR;
+    }
   }
+
   union Attribute relCatRecord[RELCAT_NO_ATTRS];
   strcpy(relCatRecord[RELCAT_REL_NAME_INDEX].sVal, relName);
   relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal = nAttrs;
   relCatRecord[RELCAT_NO_RECORDS_INDEX].nVal = 0;
   relCatRecord[RELCAT_FIRST_BLOCK_INDEX].nVal = -1;
   relCatRecord[RELCAT_LAST_BLOCK_INDEX].nVal = -1;
-  relCatRecord[RELCAT_NO_SLOTS_PER_BLOCK_INDEX].nVal = floor(2016 / (16 * nAttrs - 1));
+  relCatRecord[RELCAT_NO_SLOTS_PER_BLOCK_INDEX].nVal = floor(2016 / (16 * nAttrs + 1));
 
   int ret = BlockAccess::insert(RELCAT_RELID, relCatRecord);
   if (ret != SUCCESS)
@@ -87,8 +89,8 @@ int Schema::createRel(char relName[], int nAttrs, char attrs[][ATTR_SIZE], int a
       Schema::deleteRel(relName);
       return ret;
     }
-    return SUCCESS;
   }
+  return SUCCESS;
 }
 
 int Schema::deleteRel(char *relName)
