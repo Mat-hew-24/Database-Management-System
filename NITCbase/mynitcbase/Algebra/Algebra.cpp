@@ -83,9 +83,11 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
   RelCatEntry relCat;
   if (RelCacheTable::getRelCatEntry(srcRelId, &relCat) != SUCCESS)
     return E_RELNOTOPEN;
+  int src_nAttrs = relCat.numAttrs;
+  char attr_names[src_nAttrs][ATTR_SIZE];
+  int attr_types[src_nAttrs];
 
   printf("\n");
-
   printf("|");
   for (int i = 0; i < relCat.numAttrs; i++)
   {
@@ -94,17 +96,20 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
     printf("|");
   }
   printf("\n");
-
   printf("|");
+
   for (int i = 0; i < relCat.numAttrs; i++)
   {
     AttrCatEntry attrEntry;
     if (AttrCacheTable::getAttrCatEntry(srcRelId, i, &attrEntry) != SUCCESS)
       return E_ATTRNOTEXIST;
+    strcpy(attr_names[i], attrEntry.attrName);
+    attr_types[i] = attrEntry.attrType;
+
     printf(" %-*s |", COL_WIDTH, attrEntry.attrName);
   }
-  printf("\n");
 
+  printf("\n");
   printf("|");
   for (int i = 0; i < relCat.numAttrs; i++)
   {
@@ -114,13 +119,12 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
   }
   printf("\n");
 
-  /* fetch and print matching records */
   while (true)
   {
     RecId recId = BlockAccess::linearSearch(srcRelId, attr, attrVal, op);
 
     if (recId.block == -1 && recId.slot == -1)
-      break; // no more records
+      break;
 
     RecBuffer rb(recId.block);
 
@@ -141,6 +145,7 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
     }
     printf("\n");
   }
+
   printf("|");
   for (int i = 0; i < relCat.numAttrs; i++)
   {
@@ -186,4 +191,3 @@ int Algebra::insert(char relName[ATTR_SIZE], int nAttrs, char record[][ATTR_SIZE
   }
   return BlockAccess::insert(relId, recordValues);
 }
-
