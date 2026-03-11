@@ -4,7 +4,8 @@
 
 BlockBuffer::BlockBuffer(char blockType)
 {
-  int blockVal = this->getFreeBlock(blockType);
+  int bType = blockType == 'R' ? REC : UNUSED_BLK;
+  int blockVal = this->getFreeBlock(bType);
   this->blockNum = blockVal;
 }
 
@@ -169,13 +170,15 @@ int RecBuffer::getSlotMap(unsigned char *slotMap)
   int ret = loadBlockAndGetBufferPtr(&bufferPtr);
   if (ret != SUCCESS)
     return ret;
-  HeadInfo head;
-  getHeader(&head);
+
+  RecBuffer recordBlock(this->blockNum);
+  struct HeadInfo head;
+  recordBlock.getHeader(&head);
 
   int slotCount = head.numSlots;
   unsigned char *slotMapInBuffer = bufferPtr + HEADER_SIZE;
   for (int slots = 0; slots < slotCount; slots++)
-    slotMap[slots] = slotMapInBuffer[slots];
+    *(slotMap + slots) = *(slotMapInBuffer + slots);
   return SUCCESS;
 }
 
@@ -220,14 +223,12 @@ int BlockBuffer::getBlockNum()
 
 void BlockBuffer::releaseBlock()
 {
-  if (this->blockNum == INVALID_BLOCKNUM)
+  if (blockNum == INVALID_BLOCKNUM || StaticBuffer::blockAllocMap[blockNum] == UNUSED_BLK)
     return;
-  int bufferNum = StaticBuffer::getBufferNum(this->blockNum);
-  if (bufferNum == E_BLOCKNOTINBUFFER)
-    return;
-  StaticBuffer::metainfo[bufferNum].free = true;
-  StaticBuffer::blockAllocMap[this->blockNum] = UNUSED_BLK;
-  this->blockNum = INVALID_BLOCKNUM; // invalid blockNum = -1
+  int bufferNum = StaticBuffer::getBufferNum(blockNum);
+  if (bufferNum >= 0 && bufferNum < BUFFER_CAPACITY)
+    StaticBuffer::metainfo[bufferNum].free = true;
+  StaticBuffer::blockAllocMap[blockNum] = UNUSED_BLK;
+  this->blockNum = INVALID_BLOCKNUM;
   return;
 }
-
