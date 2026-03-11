@@ -101,3 +101,4 @@ int Schema::deleteRel(char *relName)
     return E_RELOPEN;
   return BlockAccess::deleteRelation(relName);
 }
+

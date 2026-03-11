@@ -101,3 +101,4 @@ int StaticBuffer::setDirtyBit(int blockNum)
     metainfo[bufferNum].dirty = true;
   return SUCCESS;
 }
+
