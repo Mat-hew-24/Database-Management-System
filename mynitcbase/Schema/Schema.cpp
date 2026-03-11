@@ -2,7 +2,6 @@
 #include <cmath>
 #include <cstring>
 #include <vector>
-#include <unordered_set>
 #include <string>
 
 int Schema::openRel(char relName[ATTR_SIZE])
