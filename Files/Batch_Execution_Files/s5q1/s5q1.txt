@@ -1,3 +1,0 @@
-OPEN TABLE Students
-SELECT * FROM Students INTO null WHERE Batch=J
-CLOSE TABLE Students

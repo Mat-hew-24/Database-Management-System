@@ -230,3 +230,4 @@ void BlockBuffer::releaseBlock()
   this->blockNum = INVALID_BLOCKNUM; // invalid blockNum = -1
   return;
 }
+

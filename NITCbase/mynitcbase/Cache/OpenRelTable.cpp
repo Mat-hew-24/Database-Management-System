@@ -94,7 +94,7 @@ OpenRelTable::OpenRelTable()
 
 OpenRelTable::~OpenRelTable()
 {
-  for (int i = 0; i < MAX_OPEN; ++i)
+  for (int i = 2; i < MAX_OPEN; ++i)
   {
     if (!tableMetaInfo[i].free)
       OpenRelTable::closeRel(i);
@@ -109,6 +109,7 @@ OpenRelTable::~OpenRelTable()
     RecBuffer relCatBlock(recId.block);
     relCatBlock.setRecord(record, recId.slot);
   }
+  free(RelCacheTable::relCache[ATTRCAT_RELID]);
   if (RelCacheTable::relCache[RELCAT_RELID]->dirty == true)
   {
     union Attribute record[RELCAT_NO_ATTRS];
@@ -119,22 +120,21 @@ OpenRelTable::~OpenRelTable()
     RecBuffer relCatBlock(recId.block);
     relCatBlock.setRecord(record, recId.slot);
   }
+  free(RelCacheTable::relCache[RELCAT_RELID]);
 
-  for (int i = 0; i < MAX_OPEN; i++)
+  for (int i = 0; i < 2; i++)
   {
-    if (RelCacheTable::relCache[i] != nullptr)
+    if (AttrCacheTable::attrCache[i] != nullptr)
     {
-      free(RelCacheTable::relCache[i]);
-      RelCacheTable::relCache[i] = nullptr;
+      AttrCacheEntry *current = AttrCacheTable::attrCache[i];
+      while (current != nullptr)
+      {
+        AttrCacheEntry *next = current->next;
+        free(current);
+        current = next;
+      }
+      AttrCacheTable::attrCache[i] = nullptr;
     }
-    AttrCacheEntry *current = AttrCacheTable::attrCache[i];
-    while (current != nullptr)
-    {
-      AttrCacheEntry *next = current->next;
-      free(current);
-      current = next;
-    }
-    AttrCacheTable::attrCache[i] = nullptr;
   }
 }
 
@@ -256,3 +256,4 @@ int OpenRelTable::closeRel(int relId)
 
   return SUCCESS;
 }
+

@@ -46,3 +46,4 @@ void AttrCacheTable::recordToAttrCatEntry(union Attribute record[ATTRCAT_NO_ATTR
   attrCatEntry->rootBlock = (int)record[ATTRCAT_ROOT_BLOCK_INDEX].nVal;
   attrCatEntry->offset = (int)record[ATTRCAT_OFFSET_INDEX].nVal;
 }
+

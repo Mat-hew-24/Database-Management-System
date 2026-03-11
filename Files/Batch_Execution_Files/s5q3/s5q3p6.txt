@@ -1,2 +1,0 @@
-close table j;
-open table k;

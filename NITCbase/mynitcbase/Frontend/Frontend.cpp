@@ -110,3 +110,4 @@ int Frontend::custom_function(int argc, char argv[][ATTR_SIZE])
 
   return SUCCESS;
 }
+
