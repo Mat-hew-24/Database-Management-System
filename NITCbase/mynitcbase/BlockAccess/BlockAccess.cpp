@@ -427,6 +427,7 @@ int BlockAccess::project(int relId, Attribute *record)
     {
       block = head.rblock;
       slot = 0;
+      continue;
     }
     else if (slotMap[slot] == SLOT_UNOCCUPIED)
       slot++;
@@ -437,5 +438,7 @@ int BlockAccess::project(int relId, Attribute *record)
     return E_NOTFOUND;
   RecId nextRecId{block, slot};
   RelCacheTable::setSearchIndex(relId, &nextRecId);
+  RecBuffer recordBuffer(nextRecId.block);
+  ret = recordBuffer.getRecord(record, nextRecId.slot);
   return SUCCESS;
 }

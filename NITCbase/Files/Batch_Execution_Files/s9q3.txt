@@ -1,0 +1,8 @@
+open table Toys
+select * from Toys into temp1 where cgpa>8
+open table temp1
+select * from temp1 into temp2 where quizMarks>85
+open table temp2
+select rollNo,name from temp2 into temp3 where location=Kerala
+select rollNo,name from temp2 into temp4 where location=Gujarat
+select rollNo,name from temp2 into temp5 where location=Telangana
