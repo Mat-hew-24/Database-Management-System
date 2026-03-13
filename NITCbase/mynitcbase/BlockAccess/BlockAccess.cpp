@@ -396,14 +396,17 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE])
 
 int BlockAccess::project(int relId, Attribute *record)
 {
+  int ret;
   RecId prevRecId;
   RelCacheTable::getSearchIndex(relId, &prevRecId);
   int block, slot;
   if (prevRecId.block == -1 && prevRecId.slot == -1)
   {
-    RelCatEntry relcatentry;
-    RelCacheTable::getRelCatEntry(relId, &relcatentry);
-    block = relcatentry.firstBlk;
+    RelCatEntry relCatBuf;
+    ret = RelCacheTable::getRelCatEntry(relId, &relCatBuf);
+    if (ret != SUCCESS)
+      return ret;
+    block = relCatBuf.firstBlk;
     slot = 0;
   }
   else
@@ -411,14 +414,15 @@ int BlockAccess::project(int relId, Attribute *record)
     block = prevRecId.block;
     slot = prevRecId.slot + 1;
   }
-
   while (block != -1)
   {
     RecBuffer buffer(block);
     struct HeadInfo head;
-    buffer.getHeader(&head);
+    ret = buffer.getHeader(&head);
+    if (ret != SUCCESS)
+      return ret;
     unsigned char slotMap[head.numSlots];
-    buffer.getSlotMap(slotMap);
+    ret = buffer.getSlotMap(slotMap);
     if (slot >= head.numSlots)
     {
       block = head.rblock;
@@ -433,7 +437,5 @@ int BlockAccess::project(int relId, Attribute *record)
     return E_NOTFOUND;
   RecId nextRecId{block, slot};
   RelCacheTable::setSearchIndex(relId, &nextRecId);
-  RecBuffer newbuffer(nextRecId.block);
-  newbuffer.getRecord(record, nextRecId.slot);
   return SUCCESS;
 }
