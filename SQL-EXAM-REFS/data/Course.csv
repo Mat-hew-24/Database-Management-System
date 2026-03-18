@@ -1,0 +1,26 @@
+Course_ID,Course_Name,Department_ID,Faculty_ID
+CRS001,Data Structures,DEPT01,FAC01
+CRS002,Operating Systems,DEPT01,FAC02
+CRS003,Web Development,DEPT01,FAC03
+CRS004,Computer Networks,DEPT01,FAC04
+CRS005,Database Systems,DEPT01,FAC05
+CRS006,Calculus I,DEPT02,FAC06
+CRS007,Linear Algebra,DEPT02,FAC07
+CRS008,Discrete Mathematics,DEPT02,FAC08
+CRS009,Probability and Statistics,DEPT02,FAC09
+CRS010,Numerical Methods,DEPT02,FAC10
+CRS011,Classical Mechanics,DEPT03,FAC11
+CRS012,Quantum Physics,DEPT03,FAC12
+CRS013,Nuclear Physics,DEPT03,FAC13
+CRS014,Thermodynamics,DEPT03,FAC14
+CRS015,Electromagnetism,DEPT03,FAC15
+CRS016,Circuit Theory,DEPT04,FAC16
+CRS017,Signal Processing,DEPT04,FAC17
+CRS018,Microelectronics,DEPT04,FAC18
+CRS019,Control Systems,DEPT04,FAC19
+CRS020,Antenna Design,DEPT04,FAC20
+CRS021,Structural Analysis,DEPT05,FAC21
+CRS022,Fluid Mechanics,DEPT05,FAC22
+CRS023,Geotechnical Engineering,DEPT05,FAC23
+CRS024,Transportation Engineering,DEPT05,FAC24
+CRS025,Environmental Engineering,DEPT05,FAC25

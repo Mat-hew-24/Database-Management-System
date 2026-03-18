@@ -1,0 +1,26 @@
+Faculty_ID,Name,Department_ID
+FAC01,Dr. Alan Turing,DEPT01
+FAC02,Dr. Ada Lovelace,DEPT01
+FAC03,Dr. Tim Berners,DEPT01
+FAC04,Dr. Grace Hopper,DEPT01
+FAC05,Dr. Dennis Ritchie,DEPT01
+FAC06,Dr. Carl Gauss,DEPT02
+FAC07,Dr. Emmy Noether,DEPT02
+FAC08,Dr. Leonhard Euler,DEPT02
+FAC09,Dr. Henri Poincare,DEPT02
+FAC10,Dr. David Hilbert,DEPT02
+FAC11,Dr. Albert Einstein,DEPT03
+FAC12,Dr. Niels Bohr,DEPT03
+FAC13,Dr. Marie Curie,DEPT03
+FAC14,Dr. Richard Feynman,DEPT03
+FAC15,Dr. Erwin Schrodinger,DEPT03
+FAC16,Dr. James Maxwell,DEPT04
+FAC17,Dr. Nikola Tesla,DEPT04
+FAC18,Dr. Michael Faraday,DEPT04
+FAC19,Dr. Georg Ohm,DEPT04
+FAC20,Dr. Heinrich Hertz,DEPT04
+FAC21,Dr. Isambard Brunel,DEPT05
+FAC22,Dr. John Smeaton,DEPT05
+FAC23,Dr. Thomas Telford,DEPT05
+FAC24,Dr. Robert Stephenson,DEPT05
+FAC25,Dr. William Rankine,DEPT05
