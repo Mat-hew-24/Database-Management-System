@@ -239,21 +239,28 @@ int OpenRelTable::closeRel(int relId)
     relCatBlock.setRecord(record, recId.slot);
   }
 
-  tableMetaInfo[relId].free = true;
-  tableMetaInfo[relId].relName[0] = '\0';
-
   free(RelCacheTable::relCache[relId]);
   RelCacheTable::relCache[relId] = nullptr;
 
   AttrCacheEntry *curr = AttrCacheTable::attrCache[relId];
   while (curr)
   {
+    if (curr->dirty)
+    {
+      union Attribute record[ATTRCAT_NO_ATTRS];
+      AttrCacheTable::attrCatEntryToRecord(&(curr->attrCatEntry), record);
+      RecId recId = curr->recId;
+      RecBuffer attrCatBlock(recId.block);
+      attrCatBlock.setRecord(record, recId.slot);
+    }
     AttrCacheEntry *next = curr->next;
     free(curr);
     curr = next;
   }
   AttrCacheTable::attrCache[relId] = nullptr;
 
+  tableMetaInfo[relId].free = true;
+  tableMetaInfo[relId].relName[0] = '\0';
+
   return SUCCESS;
 }
-
