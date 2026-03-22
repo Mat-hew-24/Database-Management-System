@@ -134,7 +134,7 @@ int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE])
         if (ret != SUCCESS)
           return ret;
         RecId recId{block, slot};
-        ret = BPlusTree::bPlusInsert(relId, attrName, record[ATTRCAT_ATTR_NAME_INDEX], recId);
+        ret = bPlusInsert(relId, attrName, record[ATTRCAT_ATTR_NAME_INDEX], recId);
         if (ret != SUCCESS)
           return ret;
       }
@@ -144,6 +144,68 @@ int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE])
     if (ret != SUCCESS)
       return ret;
     block = head.rblock;
+  }
+  return SUCCESS;
+}
+
+int BPlusTree::bPlusDestroy(int rootBlockNum)
+{
+  if (rootBlockNum < 0 || rootBlockNum >= DISK_BLOCKS)
+    return E_OUTOFBOUND;
+  int type = StaticBuffer::getStaticBlockType(rootBlockNum);
+  if (type == IND_LEAF)
+  {
+    IndLeaf leafBlock(rootBlockNum);
+    leafBlock.releaseBlock();
+    return SUCCESS;
+  }
+  else if (type == IND_INTERNAL)
+  {
+    IndInternal internalBlock(rootBlockNum);
+    struct HeadInfo head;
+    int ret = internalBlock.getHeader(&head);
+    if (ret != SUCCESS)
+      return SUCCESS;
+    for (int i = 0; i < head.numEntries; i++)
+    {
+      struct InternalEntry entry;
+      ret = internalBlock.getEntry(&entry, i);
+      if (ret != SUCCESS)
+        return ret;
+      if (i == 0)
+        bPlusDestroy(entry.lChild);
+      bPlusDestroy(entry.rChild);
+    }
+    internalBlock.releaseBlock();
+    return SUCCESS;
+  }
+  else
+  {
+    return E_INVALIDBLOCK;
+  }
+}
+
+int BPlusTree::bPlusInsert(int relId, char attrName[ATTR_SIZE], Attribute attrVal, RecId recId)
+{
+  AttrCatEntry attrcatentry;
+  int ret = AttrCacheTable::getAttrCatEntry(relId, attrName, &attrcatentry);
+  if (ret != SUCCESS)
+    return ret;
+  int blockNum = attrcatentry.rootBlock;
+  if (blockNum == -1)
+    return E_NOINDEX;
+  int leafBlkNum = findLeafToInsert(blockNum, attrVal, attrcatentry.attrType);
+  struct Index leafData;
+  leafData.attrVal = attrVal;
+  leafData.block = recId.block;
+  leafData.slot = recId.slot;
+  ret = insertIntoLeaf(relId, attrName, leafBlkNum, leafData);
+  if (ret == E_DISKFULL)
+  {
+    bPlusDestroy(blockNum);
+    attrcatentry.rootBlock = -1;
+    AttrCacheTable::setAttrCatEntry(relId, attrName, &attrcatentry);
+    return E_DISKFULL;
   }
   return SUCCESS;
 }
