@@ -5,6 +5,7 @@
 unsigned char StaticBuffer::blocks[BUFFER_CAPACITY][BLOCK_SIZE];
 struct BufferMetaInfo StaticBuffer::metainfo[BUFFER_CAPACITY];
 unsigned char StaticBuffer::blockAllocMap[DISK_BLOCKS];
+int StaticBuffer::DiskReadCount = 0;
 
 StaticBuffer::StaticBuffer()
 {
@@ -18,6 +19,7 @@ StaticBuffer::StaticBuffer()
   for (int i = 0; i < BLOCK_ALLOCATION_MAP_SIZE; i++)
   {
     unsigned char *bufferPtr = blocks[i];
+    StaticBuffer::DiskReadCount++;
     Disk::readBlock(bufferPtr, i);
     metainfo[i].free = false;
     metainfo[i].dirty = false;
@@ -75,6 +77,7 @@ int StaticBuffer::getFreeBuffer(int blockNum)
   metainfo[bufferNum].dirty = false;
   metainfo[bufferNum].blockNum = blockNum;
   metainfo[bufferNum].timeStamp = 0;
+  StaticBuffer::DiskReadCount++;
   return bufferNum;
 }
 
@@ -102,3 +105,9 @@ int StaticBuffer::setDirtyBit(int blockNum)
   return SUCCESS;
 }
 
+int StaticBuffer::getStaticBlockType(int blockNum)
+{
+  if (blockNum < 0 || blockNum >= DISK_BLOCKS)
+    return E_OUTOFBOUND;
+  return (int)blockAllocMap[blockNum];
+}

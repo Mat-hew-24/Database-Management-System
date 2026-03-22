@@ -8,6 +8,7 @@
 #include "../Cache/RelCacheTable.h"
 #include "../Cache/AttrCacheTable.h"
 #include "../Cache/OpenRelTable.h"
+#include "../Buffer/StaticBuffer.h"
 
 #define COL_WIDTH 15
 
@@ -153,12 +154,14 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
   printf("\n");
 
   RelCacheTable::resetSearchIndex(srcRelId);
-  AttrCacheTable::resetSearchIndex(srcRelId, srcRel);
+  AttrCacheTable::resetSearchIndex(srcRelId, attr);
 
   Attribute record[src_nAttrs];
-
+  int before = StaticBuffer::DiskReadCount;
   while (BlockAccess::search(srcRelId, record, attr, attrVal, op) == SUCCESS)
   {
+    int searchAfter = StaticBuffer::DiskReadCount;
+
     printf("|");
     for (int i = 0; i < src_nAttrs; i++)
     {
@@ -170,6 +173,9 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
     printf("\n");
 
     ret = BlockAccess::insert(targetRelId, record);
+
+    before += (StaticBuffer::DiskReadCount - searchAfter);
+
     if (ret != SUCCESS)
     {
       Schema::closeRel(targetRel);
@@ -185,6 +191,8 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
     printf("|");
   }
   printf("\n\n");
+  int after = StaticBuffer::DiskReadCount;
+  printf("Disk accesses: %d\n", after - before);
 
   Schema::closeRel(targetRel);
   return SUCCESS;

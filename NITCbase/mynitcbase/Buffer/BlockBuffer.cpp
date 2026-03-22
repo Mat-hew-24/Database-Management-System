@@ -254,11 +254,11 @@ int IndInternal::getEntry(void *ptr, int indexNum)
   if (ret != SUCCESS)
     return ret;
   struct InternalEntry *internalEntry = (struct InternalEntry *)ptr;
-  unsigned char *entryPtr = bufferPtr + HEADER_SIZE + (indexNum * (sizeof(int32_t) + sizeof(Attribute)));
+  unsigned char *entryPtr = bufferPtr + HEADER_SIZE + (indexNum * (LCHILD_SIZE + ATTR_SIZE));
 
-  memcpy(&(internalEntry->lChild), entryPtr, sizeof(int32_t));
-  memcpy(&(internalEntry->attrVal), entryPtr + sizeof(int32_t), sizeof(Attribute));
-  memcpy(&(internalEntry->rChild), entryPtr + sizeof(int32_t) + sizeof(Attribute), sizeof(int32_t));
+  memcpy(&(internalEntry->lChild), entryPtr, LCHILD_SIZE);
+  memcpy(&(internalEntry->attrVal), entryPtr + LCHILD_SIZE, ATTR_SIZE);
+  memcpy(&(internalEntry->rChild), entryPtr + LCHILD_SIZE + ATTR_SIZE, RCHILD_SIZE);
   return SUCCESS;
 }
 
@@ -281,7 +281,7 @@ int IndInternal::setEntry(void *ptr, int indexNum)
   return 0;
 }
 
-int IndInternal::setEntry(void *ptr, int indexNum)
+int IndLeaf::setEntry(void *ptr, int indexNum)
 {
   return 0;
 }

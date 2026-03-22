@@ -72,7 +72,7 @@ int AttrCacheTable::getSearchIndex(int relId, char attrName[ATTR_SIZE], IndexId 
     return E_RELNOTOPEN;
   for (AttrCacheEntry *entry = attrCache[relId]; entry != nullptr; entry = entry->next)
   {
-    if (strcmp(entry->attrCatEntry.attrName, attrName))
+    if (strcmp(entry->attrCatEntry.attrName, attrName) == 0)
     {
       *searchIndex = entry->searchIndex;
       return SUCCESS;
@@ -109,7 +109,7 @@ int AttrCacheTable::setSearchIndex(int relId, char attrName[ATTR_SIZE], IndexId 
       return E_RELNOTOPEN;
     for (AttrCacheEntry *entry = attrCache[relId]; entry != nullptr; entry = entry->next)
     {
-      if (strcmp(entry->attrCatEntry.attrName, attrName))
+      if (strcmp(entry->attrCatEntry.attrName, attrName) == 0)
       {
         entry->searchIndex = *searchIndex;
         return SUCCESS;
