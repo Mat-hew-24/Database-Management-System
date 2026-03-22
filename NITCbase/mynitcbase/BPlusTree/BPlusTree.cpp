@@ -95,3 +95,55 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
   }
   return RecId{-1, -1};
 }
+
+int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE])
+{
+  if (relId == RELCAT_RELID || relId == ATTRCAT_RELID)
+    E_NOTPERMITTED;
+  AttrCatEntry attrcatentry;
+  int ret = AttrCacheTable::getAttrCatEntry(relId, attrName, &attrcatentry);
+  if (ret != SUCCESS)
+    return ret;
+  int rootBlockCheck = attrcatentry.rootBlock;
+  if (rootBlockCheck != -1)
+    return SUCCESS;
+
+  //* create bplustree
+  IndLeaf rootBlockBuf;
+  int rootBlock = rootBlockBuf.getBlockNum();
+  if (rootBlock = E_DISKFULL)
+    return E_DISKFULL;
+  RelCatEntry relcatentry;
+  ret = RelCacheTable::getRelCatEntry(relId, &relcatentry);
+  if (ret != SUCCESS)
+    return ret;
+  int block = relcatentry.firstBlk;
+  while (block != -1)
+  {
+    RecBuffer buffer(block);
+    unsigned char slotMap[relcatentry.numSlotsPerBlk];
+    ret = buffer.getSlotMap(slotMap);
+    if (ret != SUCCESS)
+      return ret;
+    for (int slot = 0; slot < relcatentry.numSlotsPerBlk; slot++)
+    {
+      if (slotMap[slot] == SLOT_OCCUPIED)
+      {
+        Attribute record[relcatentry.numAttrs];
+        ret = buffer.getRecord(record, slot);
+        if (ret != SUCCESS)
+          return ret;
+        RecId recId{block, slot};
+        ret = BPlusTree::bPlusInsert(relId, attrName, record[ATTRCAT_ATTR_NAME_INDEX], recId);
+        if (ret != SUCCESS)
+          return ret;
+      }
+    }
+    struct HeadInfo head;
+    int ret = buffer.getHeader(&head);
+    if (ret != SUCCESS)
+      return ret;
+    block = head.rblock;
+  }
+  return SUCCESS;
+}
