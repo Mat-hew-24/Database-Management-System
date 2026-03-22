@@ -209,3 +209,35 @@ int BPlusTree::bPlusInsert(int relId, char attrName[ATTR_SIZE], Attribute attrVa
   }
   return SUCCESS;
 }
+
+int BPlusTree::findLeafToInsert(int rootBlock, Attribute attrVal, int attrType)
+{
+  int blockNum = rootBlock;
+  while (StaticBuffer::getStaticBlockType(blockNum) != IND_LEAF)
+  {
+    IndInternal internalBlock(blockNum);
+    struct HeadInfo head;
+    int ret = internalBlock.getHeader(&head);
+    if (ret != SUCCESS)
+      return ret;
+    int found = 0;
+    struct InternalEntry entry;
+    for (int i = 0; i < head.numEntries; i++)
+    {
+      internalBlock.getEntry(&entry, i);
+      if (compareAttrs(entry.attrVal, attrVal, attrType) >= 0)
+      {
+        found = 1;
+        break;
+      }
+    }
+    if (!found)
+    {
+      internalBlock.getEntry(&entry, head.numEntries - 1);
+      blockNum = entry.rChild;
+    }
+    else
+      blockNum = entry.lChild;
+  }
+  return blockNum;
+}
