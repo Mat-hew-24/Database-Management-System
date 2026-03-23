@@ -241,3 +241,72 @@ int BPlusTree::findLeafToInsert(int rootBlock, Attribute attrVal, int attrType)
   }
   return blockNum;
 }
+
+int BPlusTree::insertIntoLeaf(int relId, char attrName[ATTR_SIZE], int blockNum, Index indexEntry)
+{
+  AttrCatEntry attrcatentry;
+  int ret = AttrCacheTable::getAttrCatEntry(relId, attrName, &attrcatentry);
+  if (ret != SUCCESS)
+    return ret;
+  IndLeaf leafBlock(blockNum);
+  struct HeadInfo blockHeader;
+  ret = leafBlock.getHeader(&blockHeader);
+  if (ret != SUCCESS)
+    return ret;
+  Index indices[blockHeader.numEntries + 1];
+
+  bool inserted = false;
+  int idx = 0;
+  for (int i = 0; i < blockHeader.numEntries; i++)
+  {
+    Index entry;
+    ret = leafBlock.getEntry(&entry, i);
+    if (ret != SUCCESS)
+      return ret;
+    if (!inserted && compareAttrs(indexEntry.attrVal, entry.attrVal, attrcatentry.attrType) <= 0)
+    {
+      indices[idx++] = indexEntry;
+      inserted = true;
+    }
+    indices[idx++] = entry;
+  }
+  if (!inserted)
+    indices[idx] = indexEntry;
+
+  if (blockHeader.numEntries != MAX_KEYS_LEAF)
+  {
+    blockHeader.numEntries++;
+    ret = leafBlock.setHeader(&blockHeader);
+    if (ret != SUCCESS)
+      return ret;
+    for (int i = 0; i < blockHeader.numEntries; i++)
+    {
+      ret = leafBlock.setEntry(&indices[i], i);
+      if (ret != SUCCESS)
+        return ret;
+    }
+    return SUCCESS;
+  }
+
+  int newRightBlk = splitLeaf(blockNum, indices);
+  if (newRightBlk == E_DISKFULL)
+    return E_DISKFULL;
+
+  if (blockHeader.pblock != -1)
+  {
+    InternalEntry middleEntry;
+    middleEntry.attrVal = indices[MIDDLE_INDEX_LEAF].attrVal;
+    middleEntry.lChild = blockNum;
+    middleEntry.rChild = newRightBlk;
+    int ret = insertIntoInternal(relId, attrName, blockHeader.pblock, middleEntry);
+    if (ret != SUCCESS)
+      return ret;
+  }
+  else
+  {
+    ret = createNewRoot(relId, attrName, indices[MIDDLE_INDEX_LEAF].attrVal, blockNum, newRightBlk);
+    if (ret != SUCCESS)
+      return ret;
+  }
+  return SUCCESS;
+}
