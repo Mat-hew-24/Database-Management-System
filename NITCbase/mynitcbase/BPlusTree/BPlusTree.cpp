@@ -409,3 +409,111 @@ int BPlusTree::insertIntoInternal(int relId, char attrName[ATTR_SIZE], int intBl
     ret = createNewRoot(relId, attrName, internalEntries[MIDDLE_INDEX_INTERNAL].attrVal, intBlockNum, newRightBlk);
   return ret;
 }
+
+int BPlusTree::splitInternal(int intBlockNum, InternalEntry internalEntries[])
+{
+  IndInternal rightBlk;
+  IndInternal leftBlk(intBlockNum);
+  int rightBlkNum = rightBlk.getBlockNum();
+  int leftBlkNum = leftBlk.getBlockNum();
+  if (rightBlkNum == E_DISKFULL)
+    return E_DISKFULL;
+  struct HeadInfo leftBlkHeader, rightBlkHeader;
+  int ret = leftBlk.getHeader(&leftBlkHeader);
+  if (ret != SUCCESS)
+    return ret;
+  ret = rightBlk.getHeader(&rightBlkHeader);
+  if (ret != SUCCESS)
+    return ret;
+  int half = (MAX_KEYS_INTERNAL) / 2;
+  rightBlkHeader.numEntries = half; // 50
+  rightBlkHeader.pblock = leftBlkHeader.pblock;
+  ret = rightBlk.setHeader(&rightBlkHeader);
+  if (ret != SUCCESS)
+    return ret;
+  leftBlkHeader.numEntries = half;
+  ret = leftBlk.setHeader(&leftBlkHeader);
+  if (ret != SUCCESS)
+    return ret;
+  for (int i = 0; i < MAX_KEYS_INTERNAL; i++)
+  {
+    if (i < half)
+      ret = leftBlk.setEntry(&internalEntries[i], i);
+    else
+      ret = rightBlk.setEntry(&internalEntries[i + 1], i - half);
+    if (ret != SUCCESS)
+      return ret;
+  }
+  int type = StaticBuffer::getStaticBlockType(internalEntries[0].lChild);
+  for (int i = 0; i <= rightBlkHeader.numEntries; i++)
+  {
+    InternalEntry entry;
+    ret = rightBlk.getEntry(&entry, i < rightBlkHeader.numEntries ? i : i - 1);
+    if (ret != SUCCESS)
+      return ret;
+    int childBlkNum = (i < rightBlkHeader.numEntries) ? entry.lChild : entry.rChild;
+    BlockBuffer childBlk(childBlkNum);
+    struct HeadInfo childBlkHeader;
+    ret = childBlk.getHeader(&childBlkHeader);
+    if (ret != SUCCESS)
+      return ret;
+    childBlkHeader.pblock = rightBlkNum;
+    ret = childBlk.setHeader(&childBlkHeader);
+    if (ret != SUCCESS)
+      return ret;
+  }
+  return rightBlkNum;
+}
+
+int BPlusTree::createNewRoot(int relId, char attrName[ATTR_SIZE], Attribute attrVal, int lChild, int rChild)
+{
+  AttrCatEntry attrcatentry;
+  int ret = AttrCacheTable::getAttrCatEntry(relId, attrName, &attrcatentry);
+  if (ret != SUCCESS)
+    return ret;
+  IndInternal newRootBlk;
+  int newRootBlkNum = newRootBlk.getBlockNum();
+  if (newRootBlkNum == E_DISKFULL)
+  {
+    bPlusDestroy(rChild);
+    return E_DISKFULL;
+  }
+  struct HeadInfo newRootBlkHeader;
+  ret = newRootBlk.getHeader(&newRootBlkHeader);
+  if (ret != SUCCESS)
+    return ret;
+  newRootBlkHeader.numEntries = 1;
+  ret = newRootBlk.setHeader(&newRootBlkHeader);
+  if (ret != SUCCESS)
+    return ret;
+  InternalEntry entry;
+  entry.lChild = lChild;
+  entry.rChild = rChild;
+  entry.attrVal = attrVal;
+  ret = newRootBlk.setEntry(&entry, 0);
+
+  BlockBuffer leftChildBlk(lChild);
+  struct HeadInfo leftChildHeader;
+  ret = leftChildBlk.getHeader(&leftChildHeader);
+  if (ret != SUCCESS)
+    return ret;
+  leftChildHeader.pblock = newRootBlkNum;
+  ret = leftChildBlk.setHeader(&leftChildHeader);
+  if (ret != SUCCESS)
+    return ret;
+
+  BlockBuffer rightChildBlk(rChild);
+  struct HeadInfo rightChildHeader;
+  ret = rightChildBlk.getHeader(&rightChildHeader);
+  if (ret != SUCCESS)
+    return ret;
+  rightChildHeader.pblock = newRootBlkNum;
+  ret = rightChildBlk.setHeader(&rightChildHeader);
+  if (ret != SUCCESS)
+    return ret;
+  attrcatentry.rootBlock = newRootBlkNum;
+  ret = AttrCacheTable::setAttrCatEntry(relId, attrName, &attrcatentry);
+  if (ret != SUCCESS)
+    return ret;
+  return SUCCESS;
+}
