@@ -299,14 +299,113 @@ int BPlusTree::insertIntoLeaf(int relId, char attrName[ATTR_SIZE], int blockNum,
     middleEntry.lChild = blockNum;
     middleEntry.rChild = newRightBlk;
     int ret = insertIntoInternal(relId, attrName, blockHeader.pblock, middleEntry);
-    if (ret != SUCCESS)
-      return ret;
   }
   else
-  {
     ret = createNewRoot(relId, attrName, indices[MIDDLE_INDEX_LEAF].attrVal, blockNum, newRightBlk);
+  return ret;
+}
+
+int BPlusTree::splitLeaf(int leafBlockNum, Index indices[])
+{
+  IndLeaf rightBlk;
+  IndLeaf leftBlk(leafBlockNum);
+  int rightBlkNum = rightBlk.getBlockNum();
+  int leftBlkNum = leftBlk.getBlockNum();
+  int half = (MAX_KEYS_LEAF + 1) / 2;
+  if (rightBlkNum == E_DISKFULL)
+    return E_DISKFULL;
+  struct HeadInfo leftBlkHeader, rightBlkHeader;
+  int ret = leftBlk.getHeader(&leftBlkHeader);
+  if (ret != SUCCESS)
+    return ret;
+  ret = rightBlk.getHeader(&rightBlkHeader);
+  if (ret != SUCCESS)
+    return ret;
+  rightBlkHeader.numEntries = half; // 32
+  rightBlkHeader.pblock = leftBlkHeader.pblock;
+  rightBlkHeader.lblock = leftBlkNum;
+  rightBlkHeader.rblock = leftBlkHeader.rblock;
+  ret = rightBlk.setHeader(&rightBlkHeader);
+  if (ret != SUCCESS)
+    return ret;
+  leftBlkHeader.numEntries = half;
+  leftBlkHeader.rblock = rightBlkNum;
+  ret = leftBlk.setHeader(&leftBlkHeader);
+  if (ret != SUCCESS)
+    return ret;
+
+  for (int i = 0; i <= MAX_KEYS_LEAF; i++)
+  {
+    if (i < half)
+      ret = leftBlk.setEntry(&indices[i], i);
+    else
+      ret = rightBlk.setEntry(&indices[i], i - half);
     if (ret != SUCCESS)
       return ret;
   }
-  return SUCCESS;
+  return rightBlkNum;
+}
+
+int BPlusTree::insertIntoInternal(int relId, char attrName[ATTR_SIZE], int intBlockNum, InternalEntry intEntry)
+{
+  AttrCatEntry attrcatentry;
+  int ret = AttrCacheTable::getAttrCatEntry(relId, attrName, &attrcatentry);
+  if (ret != SUCCESS)
+    return ret;
+  IndInternal intBlk(intBlockNum);
+  struct HeadInfo intBlkHeader;
+  ret = intBlk.getHeader(&intBlkHeader);
+  if (ret != SUCCESS)
+    return ret;
+  InternalEntry internalEntries[intBlkHeader.numEntries + 1];
+  bool inserted = false;
+  int idx = 0;
+  for (int i = 0; i < intBlkHeader.numEntries; i++)
+  {
+    InternalEntry entry;
+    int ret = intBlk.getEntry(&entry, i);
+    if (ret != SUCCESS)
+      return ret;
+    if (!inserted && compareAttrs(intEntry.attrVal, entry.attrVal, attrcatentry.attrType) <= 0)
+    {
+      internalEntries[idx++] = intEntry;
+      inserted = true;
+      entry.lChild = intEntry.rChild;
+    }
+    internalEntries[idx++] = entry;
+  }
+  if (!inserted)
+    internalEntries[idx] = intEntry;
+  if (intBlkHeader.numEntries != MAX_KEYS_INTERNAL)
+  {
+    intBlkHeader.numEntries++;
+    ret = intBlk.setHeader(&intBlkHeader);
+    if (ret != SUCCESS)
+      return ret;
+    for (int i = 0; i < intBlkHeader.numEntries; i++)
+    {
+      ret = intBlk.setEntry(&internalEntries[i], i);
+      if (ret != SUCCESS)
+        return ret;
+    }
+    return SUCCESS;
+  }
+
+  int newRightBlk = splitInternal(intBlockNum, internalEntries);
+  if (newRightBlk == E_DISKFULL)
+  {
+    bPlusDestroy(intEntry.rChild);
+    return E_DISKFULL;
+  }
+  if (intBlkHeader.pblock != -1)
+  {
+    InternalEntry middleEntry;
+    middleEntry.attrVal = internalEntries[MIDDLE_INDEX_INTERNAL].attrVal;
+    middleEntry.lChild = intBlockNum;
+    middleEntry.rChild = newRightBlk;
+    ret = insertIntoInternal(relId, attrName, intBlkHeader.pblock, middleEntry);
+  }
+  else
+    ret = createNewRoot(relId, attrName, internalEntries[MIDDLE_INDEX_INTERNAL].attrVal, intBlockNum, newRightBlk);
+  return ret;
 }
