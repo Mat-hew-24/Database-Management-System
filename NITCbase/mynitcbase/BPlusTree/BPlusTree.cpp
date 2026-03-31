@@ -1,5 +1,6 @@
 #include "BPlusTree.h"
 #include <cstring>
+#include <iostream>
 
 RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attrVal, int op)
 {
@@ -20,7 +21,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
     block = searchIndex.block;
     index = searchIndex.index + 1;
     IndLeaf leaf(block);
-    HeadInfo leafHead;
+    struct HeadInfo leafHead;
     leaf.getHeader(&leafHead);
     if (index >= leafHead.numEntries)
     {
@@ -33,7 +34,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
   while (StaticBuffer::getStaticBlockType(block) == IND_INTERNAL)
   {
     IndInternal internalBlk(block);
-    HeadInfo intHead;
+    struct HeadInfo intHead;
     internalBlk.getHeader(&intHead);
     InternalEntry intEntry;
     if (op == NE || op == LT || op == LE)
@@ -44,23 +45,27 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
     else
     {
       bool found = false;
-      for (int i = 0; i < intHead.numEntries; i++)
+      int i = 0;
+      while (i < intHead.numEntries)
       {
         internalBlk.getEntry(&intEntry, i);
         int cmp = compareAttrs(intEntry.attrVal, attrVal, attrcatentry.attrType);
         if (((op == EQ || op == GE) && cmp >= 0) || (op == GT && cmp > 0))
         {
-          block = intEntry.lChild;
           found = true;
           break;
         }
+        i++;
       }
-      if (!found)
+      if (found)
+        block = intEntry.lChild;
+      else
       {
         internalBlk.getEntry(&intEntry, intHead.numEntries - 1);
         block = intEntry.rChild;
       }
     }
+    index = 0;
   }
   while (block != -1)
   {
@@ -167,23 +172,20 @@ int BPlusTree::bPlusDestroy(int rootBlockNum)
     int ret = internalBlock.getHeader(&head);
     if (ret != SUCCESS)
       return SUCCESS;
+    struct InternalEntry entry;
+    internalBlock.getEntry(&entry, 0);
+    bPlusDestroy(entry.lChild);
     for (int i = 0; i < head.numEntries; i++)
     {
-      struct InternalEntry entry;
-      ret = internalBlock.getEntry(&entry, i);
-      if (ret != SUCCESS)
-        return ret;
-      if (i == 0)
-        bPlusDestroy(entry.lChild);
+      InternalEntry entry;
+      internalBlock.getEntry(&entry, i);
       bPlusDestroy(entry.rChild);
     }
     internalBlock.releaseBlock();
     return SUCCESS;
   }
   else
-  {
     return E_INVALIDBLOCK;
-  }
 }
 
 int BPlusTree::bPlusInsert(int relId, char attrName[ATTR_SIZE], Attribute attrVal, RecId recId)
@@ -416,7 +418,7 @@ int BPlusTree::splitInternal(int intBlockNum, InternalEntry internalEntries[])
   IndInternal rightBlk;
   IndInternal leftBlk(intBlockNum);
   int rightBlkNum = rightBlk.getBlockNum();
-  int leftBlkNum = leftBlk.getBlockNum();
+  int leftBlkNum = intBlockNum;
   if (rightBlkNum == E_DISKFULL)
     return E_DISKFULL;
   struct HeadInfo leftBlkHeader, rightBlkHeader;
@@ -427,12 +429,12 @@ int BPlusTree::splitInternal(int intBlockNum, InternalEntry internalEntries[])
   if (ret != SUCCESS)
     return ret;
   int half = (MAX_KEYS_INTERNAL) / 2;
+  leftBlkHeader.numEntries = half;
   rightBlkHeader.numEntries = half; // 50
   rightBlkHeader.pblock = leftBlkHeader.pblock;
   ret = rightBlk.setHeader(&rightBlkHeader);
   if (ret != SUCCESS)
     return ret;
-  leftBlkHeader.numEntries = half;
   ret = leftBlk.setHeader(&leftBlkHeader);
   if (ret != SUCCESS)
     return ret;
@@ -512,6 +514,7 @@ int BPlusTree::createNewRoot(int relId, char attrName[ATTR_SIZE], Attribute attr
   ret = rightChildBlk.setHeader(&rightChildHeader);
   if (ret != SUCCESS)
     return ret;
+
   attrcatentry.rootBlock = newRootBlkNum;
   ret = AttrCacheTable::setAttrCatEntry(relId, attrName, &attrcatentry);
   if (ret != SUCCESS)
