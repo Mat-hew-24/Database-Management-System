@@ -105,7 +105,7 @@ int Schema::deleteRel(char *relName)
 int Schema::createIndex(char relName[ATTR_SIZE], char attrName[ATTR_SIZE])
 {
   if ((strcmp(relName, RELCAT_RELNAME) == 0) || (strcmp(relName, ATTRCAT_RELNAME) == 0))
-    return E_NOTPERMITTED;
+    E_NOTPERMITTED;
   int relId = OpenRelTable::getRelId(relName);
   if (relId == E_RELNOTOPEN)
     return E_RELNOTOPEN;
@@ -126,11 +126,11 @@ int Schema::dropIndex(char relName[ATTR_SIZE], char attrName[ATTR_SIZE])
   int rootBlock = attrcatentry.rootBlock;
   if (rootBlock != -1)
     return E_NOINDEX;
-  int ret = BPlusTree::bPlusDestroy(rootBlock);
+  ret = BPlusTree::bPlusDestroy(rootBlock);
   if (ret != SUCCESS)
     return ret;
   attrcatentry.rootBlock = -1;
-  int ret = AttrCacheTable::setAttrCatEntry(relId, attrName, &attrcatentry);
+  ret = AttrCacheTable::setAttrCatEntry(relId, attrName, &attrcatentry);
   if (ret != SUCCESS)
     return ret;
   return SUCCESS;

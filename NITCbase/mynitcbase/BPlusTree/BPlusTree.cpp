@@ -1,5 +1,4 @@
 #include "BPlusTree.h"
-
 #include <cstring>
 
 RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attrVal, int op)
@@ -99,7 +98,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
 int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE])
 {
   if (relId == RELCAT_RELID || relId == ATTRCAT_RELID)
-    E_NOTPERMITTED;
+    return E_NOTPERMITTED;
   AttrCatEntry attrcatentry;
   int ret = AttrCacheTable::getAttrCatEntry(relId, attrName, &attrcatentry);
   if (ret != SUCCESS)
@@ -111,8 +110,10 @@ int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE])
   //* create bplustree
   IndLeaf rootBlockBuf;
   int rootBlock = rootBlockBuf.getBlockNum();
-  if (rootBlock = E_DISKFULL)
+  if (rootBlock == E_DISKFULL)
     return E_DISKFULL;
+  attrcatentry.rootBlock = rootBlock;
+  AttrCacheTable::setAttrCatEntry(relId, attrName, &attrcatentry);
   RelCatEntry relcatentry;
   ret = RelCacheTable::getRelCatEntry(relId, &relcatentry);
   if (ret != SUCCESS)
@@ -134,13 +135,13 @@ int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE])
         if (ret != SUCCESS)
           return ret;
         RecId recId{block, slot};
-        ret = bPlusInsert(relId, attrName, record[ATTRCAT_ATTR_NAME_INDEX], recId);
+        ret = bPlusInsert(relId, attrName, record[attrcatentry.offset], recId);
         if (ret != SUCCESS)
           return ret;
       }
     }
     struct HeadInfo head;
-    int ret = buffer.getHeader(&head);
+    ret = buffer.getHeader(&head);
     if (ret != SUCCESS)
       return ret;
     block = head.rblock;
