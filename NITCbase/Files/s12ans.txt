@@ -1,0 +1,13 @@
+create table Locations(name STR, capacity NUM)
+create table Events(id NUM, title STR, location STR)
+create table Participants(regNo NUM, event STR)
+open table Locations
+open table Events
+open table Participants
+insert into Locations values from s12locations.csv
+insert into Events values from s12events.csv
+insert into Participants values from s12participants.csv
+select location from Events into EventLocations
+select * from Events into AudiEvents where location=Audi
+open table AudiEvents
+select regNo,event from Participants join AudiEvents into AudiPeople where Participants.event=AudiEvents.title

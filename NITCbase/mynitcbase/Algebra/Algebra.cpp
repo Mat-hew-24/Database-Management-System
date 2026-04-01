@@ -319,6 +319,8 @@ int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], ch
   if (attrcatentry1.attrType != attrcatentry2.attrType)
     return E_ATTRTYPEMISMATCH;
   RelCatEntry relcatentry1, relcatentry2;
+  RelCacheTable::getRelCatEntry(relId1, &relcatentry1);
+  RelCacheTable::getRelCatEntry(relId2, &relcatentry2);
   for (int i = 0; i < relcatentry1.numAttrs; i++)
   {
     AttrCatEntry x1;
