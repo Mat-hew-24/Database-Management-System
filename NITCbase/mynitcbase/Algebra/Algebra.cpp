@@ -20,33 +20,6 @@ bool isNumber(char *str)
   return ret == 1 && len == strlen(str);
 }
 
-/**
- * @brief Performs a select operation on a relation based on a condition
- *
- * This function retrieves records from a source relation that satisfy a given
- * condition and displays them in a tabular format. The condition is specified
- * by an attribute name, an operation code, and a comparison value.
- *
- * @param srcRel     The name of the source relation to select from
- * @param targetRel  The name of the target relation (currently unused in implementation)
- * @param attr       The attribute name on which the condition is applied
- * @param op         The operation code for the condition (e.g., equal, greater than, etc.)
- * @param strVal     The value for condition comparison (as string)
- *
- * @note Algorithm Steps:
- * @note 1. Get the relation id for source relation\n
- * @note 2. Get the attribute catalog entry for the condition attribute
- * @note 3. Convert the string value to Attribute type based on attribute type
- * @note 4. Reset the search index for the source relation
- * @note 5. Fetch the relation catalog entry
- * @note 6. Print the attribute names as header
- * @note 7. Perform linear search through the relation for matching records
- * @note 8. For each matching record, fetch and print the record values
- * @note ------------------------------------------------------------
- * @note The function prints results to stdout in a table format with columns
- *       separated by '|' characters
- */
-
 int Algebra::insert(char relName[ATTR_SIZE], int nAttrs, char record[][ATTR_SIZE])
 {
   if (strcmp(relName, RELCAT_RELNAME) == 0 || strcmp(relName, ATTRCAT_RELNAME) == 0)
@@ -83,7 +56,6 @@ int Algebra::insert(char relName[ATTR_SIZE], int nAttrs, char record[][ATTR_SIZE
 
 int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr[ATTR_SIZE], int op, char strVal[ATTR_SIZE])
 {
-
   int srcRelId = OpenRelTable::getRelId(srcRel);
   if (srcRelId == E_RELNOTOPEN)
     return E_RELNOTOPEN;
@@ -130,6 +102,7 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
     return targetRelId;
   }
 
+  // FIX: removed the extra stray printf("|"); that was here before the separator line
   printf("\n|");
   for (int i = 0; i < src_nAttrs; i++)
   {
@@ -137,7 +110,7 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
       printf("-");
     printf("|");
   }
-  printf("\n|");
+  printf("\n");
 
   printf("|");
   for (int i = 0; i < src_nAttrs; i++)
@@ -249,7 +222,6 @@ int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE])
 }
 
 // project specified attributes
-
 int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], int tar_nAttrs, char tar_Attrs[][ATTR_SIZE])
 {
   int srcRelId = OpenRelTable::getRelId(srcRel);
@@ -309,6 +281,7 @@ int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], ch
   int relId2 = OpenRelTable::getRelId(srcRelation2);
   if (relId2 == E_RELNOTOPEN)
     return E_RELNOTOPEN;
+
   AttrCatEntry attrcatentry1, attrcatentry2;
   int ret = AttrCacheTable::getAttrCatEntry(relId1, attribute1, &attrcatentry1);
   if (ret != SUCCESS)
@@ -316,15 +289,21 @@ int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], ch
   ret = AttrCacheTable::getAttrCatEntry(relId2, attribute2, &attrcatentry2);
   if (ret != SUCCESS)
     return ret;
+
   if (attrcatentry1.attrType != attrcatentry2.attrType)
     return E_ATTRTYPEMISMATCH;
+
   RelCatEntry relcatentry1, relcatentry2;
   RelCacheTable::getRelCatEntry(relId1, &relcatentry1);
   RelCacheTable::getRelCatEntry(relId2, &relcatentry2);
+
+  // FIX: also skip attribute1 in rel1 during duplicate check (reference code does this)
   for (int i = 0; i < relcatentry1.numAttrs; i++)
   {
     AttrCatEntry x1;
     AttrCacheTable::getAttrCatEntry(relId1, i, &x1);
+    if (strcmp(x1.attrName, attribute1) == 0)
+      continue;
     for (int j = 0; j < relcatentry2.numAttrs; j++)
     {
       AttrCatEntry x2;
@@ -335,74 +314,86 @@ int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], ch
         return E_DUPLICATEATTR;
     }
   }
-  if (attrcatentry2.rootBlock == -1)
+  int rootBlock = attrcatentry2.rootBlock;
+  if (rootBlock == -1)
   {
     ret = BPlusTree::bPlusCreate(relId2, attribute2);
     if (ret != SUCCESS)
       return ret;
+    rootBlock = attrcatentry2.rootBlock;
   }
+
   int numOfAttributes1 = relcatentry1.numAttrs;
   int numOfAttributes2 = relcatentry2.numAttrs;
   int numOfAttributesInTarget = numOfAttributes1 + numOfAttributes2 - 1;
+
   char targetRelAttrNames[numOfAttributesInTarget][ATTR_SIZE];
   int targetRelAttrTypes[numOfAttributesInTarget];
-  int idx = 0;
+
   for (int i = 0; i < numOfAttributes1; i++)
   {
     AttrCatEntry x;
     AttrCacheTable::getAttrCatEntry(relId1, i, &x);
-    strcpy(targetRelAttrNames[idx], x.attrName);
-    targetRelAttrTypes[idx] = x.attrType;
-    idx++;
+    strcpy(targetRelAttrNames[i], x.attrName);
+    targetRelAttrTypes[i] = x.attrType;
   }
-  for (int i = 0; i < numOfAttributes2; i++)
+  for (int i = 0, flag = 0; i < numOfAttributes2; i++)
   {
     AttrCatEntry x;
     AttrCacheTable::getAttrCatEntry(relId2, i, &x);
     if (strcmp(x.attrName, attribute2) == 0)
+    {
+      flag = 1;
       continue;
-    strcpy(targetRelAttrNames[idx], x.attrName);
-    targetRelAttrTypes[idx] = x.attrType;
-    idx++;
+    }
+    strcpy(targetRelAttrNames[numOfAttributes1 + i - flag], x.attrName);
+    targetRelAttrTypes[numOfAttributes1 + i - flag] = x.attrType;
   }
+
   ret = Schema::createRel(targetRelation, numOfAttributesInTarget, targetRelAttrNames, targetRelAttrTypes);
   if (ret != SUCCESS)
     return ret;
-  int relId = OpenRelTable::openRel(targetRelation);
-  if (relId < 0)
+
+  int targetRelId = OpenRelTable::openRel(targetRelation);
+  if (targetRelId < 0)
   {
     Schema::deleteRel(targetRelation);
-    return relId;
+    return targetRelId;
   }
+
   Attribute record1[numOfAttributes1];
   Attribute record2[numOfAttributes2];
   Attribute targetRecord[numOfAttributesInTarget];
+
+  RelCacheTable::resetSearchIndex(relId1);
   while (BlockAccess::project(relId1, record1) == SUCCESS)
   {
     RelCacheTable::resetSearchIndex(relId2);
     AttrCacheTable::resetSearchIndex(relId2, attribute2);
+
     while (BlockAccess::search(relId2, record2, attribute2, record1[attrcatentry1.offset], EQ) == SUCCESS)
     {
-      idx = 0;
       for (int i = 0; i < numOfAttributes1; i++)
-        targetRecord[idx++] = record1[i];
-      for (int i = 0; i < numOfAttributes2; i++)
+        targetRecord[i] = record1[i];
+      for (int i = 0, flag = 0; i < numOfAttributes2; i++)
       {
-        AttrCatEntry a;
-        AttrCacheTable::getAttrCatEntry(relId2, i, &a);
-        if (strcmp(a.attrName, attribute2) == 0)
+        if (attrcatentry2.offset == i)
+        {
+          flag = 1;
           continue;
-        targetRecord[idx++] = record2[i];
+        }
+        targetRecord[numOfAttributes1 + i - flag] = record2[i];
       }
-      ret = BlockAccess::insert(relId, targetRecord);
+      ret = BlockAccess::insert(targetRelId, targetRecord);
       if (ret == E_DISKFULL)
       {
-        OpenRelTable::closeRel(relId);
+        OpenRelTable::closeRel(targetRelId);
         Schema::deleteRel(targetRelation);
         return E_DISKFULL;
       }
     }
   }
-  OpenRelTable::closeRel(relId);
+
+  OpenRelTable::closeRel(targetRelId);
   return SUCCESS;
 }

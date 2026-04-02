@@ -47,7 +47,12 @@ int AttrCacheTable::setAttrCatEntry(int relId, int attrOffset, AttrCatEntry *att
   {
     if (entry->attrCatEntry.offset == attrOffset)
     {
-      entry->attrCatEntry = *attrCatBuf;
+      strcpy(entry->attrCatEntry.relName, attrCatBuf->relName);
+      strcpy(entry->attrCatEntry.attrName, attrCatBuf->attrName);
+      entry->attrCatEntry.attrType = attrCatBuf->attrType;
+      entry->attrCatEntry.primaryFlag = attrCatBuf->primaryFlag;
+      entry->attrCatEntry.rootBlock = attrCatBuf->rootBlock;
+      entry->attrCatEntry.offset = attrCatBuf->offset;
       entry->dirty = true;
       return SUCCESS;
     }
@@ -65,11 +70,17 @@ int AttrCacheTable::setAttrCatEntry(int relId, char attrName[ATTR_SIZE], AttrCat
   {
     if (strcmp(entry->attrCatEntry.attrName, attrName) == 0)
     {
-      entry->attrCatEntry = *attrCatBuf;
+      strcpy(entry->attrCatEntry.relName, attrCatBuf->relName);
+      strcpy(entry->attrCatEntry.attrName, attrCatBuf->attrName);
+      entry->attrCatEntry.attrType = attrCatBuf->attrType;
+      entry->attrCatEntry.primaryFlag = attrCatBuf->primaryFlag;
+      entry->attrCatEntry.rootBlock = attrCatBuf->rootBlock;
+      entry->attrCatEntry.offset = attrCatBuf->offset;
       entry->dirty = true;
       return SUCCESS;
     }
   }
+
   return E_ATTRNOTEXIST;
 }
 

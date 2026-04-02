@@ -1,0 +1,4 @@
+create table X(a NUM,b STR)
+open table X
+insert into X values from s11fake.csv
+create index on X.a

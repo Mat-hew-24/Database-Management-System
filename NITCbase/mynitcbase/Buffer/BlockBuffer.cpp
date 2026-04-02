@@ -2,11 +2,17 @@
 #include <cstdlib>
 #include <cstring>
 
-BlockBuffer::BlockBuffer(char blockType)
+BlockBuffer::BlockBuffer(char blocktype)
 {
-  int bType = blockType == 'R' ? REC : UNUSED_BLK;
-  int blockVal = this->getFreeBlock(bType);
-  this->blockNum = blockVal;
+  int blockType = blocktype == 'R' ? REC : blocktype == 'I' ? IND_INTERNAL
+                                       : blocktype == 'L'   ? IND_LEAF
+                                                            : UNUSED_BLK;
+  int blockNum = getFreeBlock(blockType);
+  if (blockNum < 0 || blockNum >= DISK_BLOCKS)
+  {
+    this->blockNum = blockNum;
+    return;
+  }
 }
 
 RecBuffer::RecBuffer() : BlockBuffer('R') {}
