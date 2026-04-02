@@ -124,7 +124,7 @@ int Schema::dropIndex(char relName[ATTR_SIZE], char attrName[ATTR_SIZE])
   if (ret != SUCCESS)
     return ret;
   int rootBlock = attrcatentry.rootBlock;
-  if (rootBlock != -1)
+  if (rootBlock == -1)
     return E_NOINDEX;
   ret = BPlusTree::bPlusDestroy(rootBlock);
   if (ret != SUCCESS)
