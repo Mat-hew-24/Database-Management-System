@@ -127,10 +127,19 @@ int Frontend::select_attrlist_from_join_where(char relname_source_one[ATTR_SIZE]
 
 int Frontend::custom_function(int argc, char argv[][ATTR_SIZE])
 {
-  // argc gives the size of the argv array
-  // argv stores every token delimited by space and comma
+  if (argc == 3 && strcmp(argv[0], "MIN") == 0)
+    return Frontend::select_min_attr_from_table(argv[1], argv[2]);
+  else if (argc == 3 && strcmp(argv[0], "MAX") == 0)
+    return Frontend::select_max_attr_from_table(argv[1], argv[2]);
+  return E_INVALID;
+}
 
-  // implement whatever you desire
+int Frontend::select_min_attr_from_table(char relname[ATTR_SIZE], char attrName[ATTR_SIZE])
+{
+  return Algebra::Aggregate(relname, attrName, "MIN");
+}
 
-  return SUCCESS;
+int Frontend::select_max_attr_from_table(char relname[ATTR_SIZE], char attrName[ATTR_SIZE])
+{
+  return Algebra::Aggregate(relname, attrName, "MAX");
 }
