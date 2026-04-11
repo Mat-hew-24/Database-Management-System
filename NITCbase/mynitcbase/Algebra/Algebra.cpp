@@ -39,29 +39,47 @@ int Algebra::Aggregate(char relName[ATTR_SIZE], char attrName[ATTR_SIZE], char a
 
   Attribute result = record[attrCat.offset];
 
-  while (BlockAccess::project(relId, record) == SUCCESS)
+  if (strcmp(aggregate, "MIN") == 0 || strcmp(aggregate, "MAX") == 0)
   {
-    Attribute val = record[attrCat.offset];
-    if (attrCat.attrType == NUMBER)
+    while (BlockAccess::project(relId, record) == SUCCESS)
     {
-      if (strcmp(aggregate, "MIN") == 0 && val.nVal < result.nVal)
-        result = val;
-      else if (strcmp(aggregate, "MAX") == 0 && val.nVal > result.nVal)
-        result = val;
+      Attribute val = record[attrCat.offset];
+      if (attrCat.attrType == NUMBER)
+      {
+        if (strcmp(aggregate, "MIN") == 0 && val.nVal < result.nVal)
+          result = val;
+        else if (strcmp(aggregate, "MAX") == 0 && val.nVal > result.nVal)
+          result = val;
+      }
+      else
+      {
+        if (strcmp(aggregate, "MIN") == 0 && strcmp(val.sVal, result.sVal) < 0)
+          result = val;
+        else if (strcmp(aggregate, "MAX") == 0 && strcmp(val.sVal, result.sVal) > 0)
+          result = val;
+      }
     }
-    else
-    {
-      if (strcmp(aggregate, "MIN") == 0 && strcmp(val.sVal, result.sVal) < 0)
-        result = val;
-      else if (strcmp(aggregate, "MAX") == 0 && strcmp(val.sVal, result.sVal) > 0)
-        result = val;
-    }
-  }
 
-  if (attrCat.attrType == NUMBER)
-    printf("%s(%s) = %g\n", aggregate, attrName, result.nVal);
-  else
-    printf("%s(%s) = %s\n", aggregate, attrName, result.sVal);
+    if (attrCat.attrType == NUMBER)
+      printf("%s(%s) = %g\n", aggregate, attrName, result.nVal);
+    else
+      printf("%s(%s) = %s\n", aggregate, attrName, result.sVal);
+  }
+  else if (strcmp(aggregate, "AVG") == 0)
+  {
+    double sum = result.nVal;
+    int idx = 1;
+    while (BlockAccess::project(relId, record) == SUCCESS)
+    {
+      idx++;
+      Attribute val = record[attrCat.offset];
+      if (attrCat.attrType == NUMBER)
+        sum += val.nVal;
+      else
+        return E_INVALID;
+    }
+    printf("AVG(%s) = %g\n", attrName, sum / idx);
+  }
 
   return SUCCESS;
 }

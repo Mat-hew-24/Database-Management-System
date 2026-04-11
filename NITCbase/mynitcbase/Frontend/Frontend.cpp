@@ -131,6 +131,8 @@ int Frontend::custom_function(int argc, char argv[][ATTR_SIZE])
     return Frontend::select_min_attr_from_table(argv[1], argv[2]);
   else if (argc == 3 && strcmp(argv[0], "MAX") == 0)
     return Frontend::select_max_attr_from_table(argv[1], argv[2]);
+  else if (argc == 3 && strcmp(argv[0], "AVG") == 0)
+    return Frontend::select_avg_attr_from_table(argv[1], argv[2]);
   return E_INVALID;
 }
 
@@ -142,4 +144,9 @@ int Frontend::select_min_attr_from_table(char relname[ATTR_SIZE], char attrName[
 int Frontend::select_max_attr_from_table(char relname[ATTR_SIZE], char attrName[ATTR_SIZE])
 {
   return Algebra::Aggregate(relname, attrName, "MAX");
+}
+
+int Frontend::select_avg_attr_from_table(char relname[ATTR_SIZE], char attrName[ATTR_SIZE])
+{
+  return Algebra::Aggregate(relname, attrName, "AVG");
 }
