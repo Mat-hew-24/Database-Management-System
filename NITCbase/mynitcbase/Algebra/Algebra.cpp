@@ -392,6 +392,7 @@ int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], ch
     ret = BPlusTree::bPlusCreate(relId2, attribute2);
     if (ret != SUCCESS)
       return ret;
+    AttrCacheTable::getAttrCatEntry(relId2, attribute2, &attrcatentry2);
     rootBlock = attrcatentry2.rootBlock;
   }
 
