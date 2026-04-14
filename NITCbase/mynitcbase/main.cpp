@@ -151,6 +151,36 @@ void stage2qn2()
   }
 }
 
+void printer()
+{
+  int bmap_vals[DISK_BLOCKS];
+  unsigned char buffer[BLOCK_SIZE];
+
+  int blockIndex = 0;
+  for (int i = 0; i < BMAP; i++)
+  {
+    Disk::readBlock(buffer, i);
+    for (int j = 0; j < BLOCK_SIZE; j++)
+    {
+      if (blockIndex < DISK_BLOCKS)
+        bmap_vals[blockIndex++] = buffer[j];
+    }
+  }
+
+  unsigned char blockBuffer[BLOCK_SIZE];
+  for (int i = 0; i < DISK_BLOCKS; i++)
+  {
+    if (bmap_vals[i] == REC) // ONLY data blocks
+    {
+      std::cout << "\n--- BLOCK " << i << " ---\n";
+      Disk::readBlock(blockBuffer, i);
+      for (int j = 0; j < BLOCK_SIZE; j++)
+        std::cout << (int)blockBuffer[j] << " ";
+      std::cout << "\n";
+    }
+  }
+}
+
 int main(int argc, char *argv[])
 {
   /*--------- Initialize the Run Copy of Disk ---------- */
@@ -194,7 +224,7 @@ int main(int argc, char *argv[])
   //   }
   //   printf("\n");
   // }
-  // return 0;
-  return FrontendInterface::handleFrontend(argc, argv); // later we will come back here
+  printer();
+  return 0;
+  // return FrontendInterface::handleFrontend(argc, argv); // later we will come back here
 }
-
