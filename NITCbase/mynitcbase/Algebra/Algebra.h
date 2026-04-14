@@ -27,6 +27,8 @@ public:
   static int getMin(char relname[ATTR_SIZE], char attrname[ATTR_SIZE]);
 
   static int Aggregate(char relname[ATTR_SIZE], char attrname[ATTR_SIZE], char aggregate[4]);
+
+  static int deleterows(char relName[ATTR_SIZE], char attrName[ATTR_SIZE], int op, char *value);
 };
 
 #endif // NITCBASE_ALGEBRA_H

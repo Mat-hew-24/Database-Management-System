@@ -56,6 +56,8 @@ public:
   static int select_max_attr_from_table(char relname[ATTR_SIZE], char attrName[ATTR_SIZE]);
 
   static int select_avg_attr_from_table(char relname[ATTR_SIZE], char attrName[ATTR_SIZE]);
+
+  static int delete_from_table(char relname[ATTR_SIZE], char attrname[ATTR_SIZE], int op, char *value);
 };
 
 #endif // FRONTEND_INTERFACE_FRONTEND_H

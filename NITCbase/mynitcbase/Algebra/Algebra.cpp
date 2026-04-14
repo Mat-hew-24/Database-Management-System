@@ -469,3 +469,29 @@ int Algebra::join(char srcRelation1[ATTR_SIZE], char srcRelation2[ATTR_SIZE], ch
   OpenRelTable::closeRel(targetRelId);
   return SUCCESS;
 }
+
+int Algebra::deleterows(char relName[ATTR_SIZE], char attrName[ATTR_SIZE], int op, char strVal[ATTR_SIZE])
+{
+  int relId = OpenRelTable::getRelId(relName);
+  if (relId == E_RELNOTOPEN)
+  {
+    return E_RELNOTOPEN;
+  }
+
+  AttrCatEntry attrCat;
+  int ret = AttrCacheTable::getAttrCatEntry(relId, attrName, &attrCat);
+  if (ret != SUCCESS)
+    return ret;
+  union Attribute attrValUnion;
+  if (attrCat.attrType == NUMBER)
+  {
+    if (!isNumber(strVal))
+    {
+      return E_ATTRTYPEMISMATCH;
+    }
+    attrValUnion.nVal = atof(strVal);
+  }
+  else if (attrCat.attrType == STRING)
+    strcpy(attrValUnion.sVal, strVal);
+  return BlockAccess::deleteRows(relId, attrName, attrValUnion, op);
+}

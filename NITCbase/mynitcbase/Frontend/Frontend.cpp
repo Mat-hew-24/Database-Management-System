@@ -133,6 +133,29 @@ int Frontend::custom_function(int argc, char argv[][ATTR_SIZE])
     return Frontend::select_max_attr_from_table(argv[1], argv[2]);
   else if (argc == 3 && strcmp(argv[0], "AVG") == 0)
     return Frontend::select_avg_attr_from_table(argv[1], argv[2]);
+  else if (argc == 5 && strcmp(argv[0], "DELETE") == 0)
+  {
+    char *relname = argv[1];
+    char *attrname = argv[2];
+    char *op_str = argv[3];
+    char *value = argv[4];
+    int op = -1;
+    if (strcmp(op_str, "EQ") == 0)
+      op = EQ;
+    else if (strcmp(op_str, "LT") == 0)
+      op = LT;
+    else if (strcmp(op_str, "LE") == 0)
+      op = LE;
+    else if (strcmp(op_str, "GT") == 0)
+      op = GT;
+    else if (strcmp(op_str, "GE") == 0)
+      op = GE;
+    else if (strcmp(op_str, "NE") == 0)
+      op = NE;
+    else
+      return E_INVALID;
+    return Frontend::delete_from_table(relname, attrname, op, value);
+  }
   return E_INVALID;
 }
 
@@ -149,4 +172,9 @@ int Frontend::select_max_attr_from_table(char relname[ATTR_SIZE], char attrName[
 int Frontend::select_avg_attr_from_table(char relname[ATTR_SIZE], char attrName[ATTR_SIZE])
 {
   return Algebra::Aggregate(relname, attrName, "AVG");
+}
+
+int Frontend::delete_from_table(char relname[ATTR_SIZE], char attrname[ATTR_SIZE], int op, char *value)
+{
+  return Algebra::deleterows(relname, attrname, op, value);
 }
