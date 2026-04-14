@@ -1,4 +1,5 @@
 #include "Frontend.h"
+#include "../Buffer/StaticBuffer.h"
 #include <cstring>
 #include <iostream>
 
@@ -156,6 +157,10 @@ int Frontend::custom_function(int argc, char argv[][ATTR_SIZE])
       return E_INVALID;
     return Frontend::delete_from_table(relname, attrname, op, value);
   }
+  else if (argc == 1 && strcmp(argv[0], "PRINT_BLOCKS") == 0)
+    return Frontend::print_blocks();
+  else if (argc == 1 && strcmp(argv[0], "PRINT_SLT") == 0)
+    return Frontend::print_all_slotMap();
   return E_INVALID;
 }
 
@@ -177,4 +182,82 @@ int Frontend::select_avg_attr_from_table(char relname[ATTR_SIZE], char attrName[
 int Frontend::delete_from_table(char relname[ATTR_SIZE], char attrname[ATTR_SIZE], int op, char *value)
 {
   return Algebra::deleterows(relname, attrname, op, value);
+}
+
+int Frontend::print_blocks()
+{
+  for (int i = 0; i < DISK_BLOCKS; i++)
+  {
+    if (i >= 0 && i <= 3)
+      continue;
+    int type = StaticBuffer::getStaticBlockType(i);
+    if (type == UNUSED_BLK)
+      continue;
+    std::cout << "\nBlock " << i << " ";
+    if (type == REC)
+      std::cout << "[RECORD BLOCK]\n";
+    else if (type == IND_INTERNAL)
+      std::cout << "[INDEX INTERNAL]\n";
+    else if (type == IND_LEAF)
+      std::cout << "[INDEX LEAF]\n";
+    BlockBuffer blk(i);
+    HeadInfo head;
+    blk.getHeader(&head);
+    std::cout << "Entries: " << head.numEntries
+              << " | Attrs: " << head.numAttrs
+              << " | Slots: " << head.numSlots << "\n";
+    if (type == REC)
+    {
+      RecBuffer recBuf(i);
+      int slotCount = head.numSlots;
+      int attrCount = head.numAttrs;
+      unsigned char slotMap[slotCount];
+      recBuf.getSlotMap(slotMap);
+
+      for (int s = 0; s < slotCount; s++)
+      {
+        if (slotMap[s] == SLOT_UNOCCUPIED)
+          continue;
+        union Attribute rec[attrCount];
+        recBuf.getRecord(rec, s);
+        std::cout << "Slot " << s << ": ";
+
+        for (int a = 0; a < attrCount; a++)
+          std::cout << "[" << rec[a].sVal << " | " << rec[a].nVal << "] ";
+        std::cout << "\n";
+      }
+    }
+  }
+
+  return SUCCESS;
+}
+
+int Frontend::print_all_slotMap()
+{
+  int bmap_values[DISK_BLOCKS];
+  unsigned char buffer[BLOCK_SIZE];
+  int blockCount = 0;
+
+  for (int i = 0; i < 4; i++)
+  {
+    Disk::readBlock(buffer, i);
+    for (int j = 0; j < BLOCK_SIZE; j++)
+      bmap_values[blockCount++] = buffer[j];
+  }
+  for (int i = 0; i < DISK_BLOCKS; i++)
+  {
+    if (bmap_values[i] != UNUSED_BLK && StaticBuffer::getStaticBlockType(i) == REC)
+    {
+      RecBuffer buffer(i);
+      struct HeadInfo head;
+      buffer.getHeader(&head);
+      unsigned char slotMap[head.numSlots];
+      buffer.getSlotMap(slotMap);
+      std::cout << "BLOCK : " << i << " | \n";
+      for (int j = 0; j < head.numSlots; j++)
+        std::cout << "  SLOT : " << j << " => " << (slotMap[j] == SLOT_OCCUPIED ? "OCCUPIED" : "UNOCCUPIED") << "\n";
+    }
+  }
+
+  return SUCCESS;
 }
