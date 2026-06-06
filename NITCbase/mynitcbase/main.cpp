@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
   //   }
   //   printf("\n");
   // }
-  // printer();
-  // return 0;
-  return FrontendInterface::handleFrontend(argc, argv); // later we will come back here
+  printer();
+  return 0;
+  // return FrontendInterface::handleFrontend(argc, argv); // later we will come back here
 }
