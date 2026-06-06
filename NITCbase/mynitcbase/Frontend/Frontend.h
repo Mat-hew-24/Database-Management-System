@@ -5,9 +5,8 @@
 #include "../Schema/Schema.h"
 #include "../define/constants.h"
 
-class Frontend
-{
-public:
+class Frontend {
+ public:
   // DDL
   static int create_table(char relname[ATTR_SIZE], int no_attrs, char attributes[][ATTR_SIZE], int type_attrs[]);
 
@@ -50,18 +49,6 @@ public:
                                              int attr_count, char attr_list[][ATTR_SIZE]);
 
   static int custom_function(int argc, char argv[][ATTR_SIZE]);
-
-  static int select_min_attr_from_table(char relname[ATTR_SIZE], char attrName[ATTR_SIZE]);
-
-  static int select_max_attr_from_table(char relname[ATTR_SIZE], char attrName[ATTR_SIZE]);
-
-  static int select_avg_attr_from_table(char relname[ATTR_SIZE], char attrName[ATTR_SIZE]);
-
-  static int delete_from_table(char relname[ATTR_SIZE], char attrname[ATTR_SIZE], int op, char *value);
-
-  static int print_blocks();
-
-  static int print_all_slotMap();
 };
 
-#endif // FRONTEND_INTERFACE_FRONTEND_H
+#endif  // FRONTEND_INTERFACE_FRONTEND_H

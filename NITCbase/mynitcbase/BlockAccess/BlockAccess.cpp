@@ -471,38 +471,3 @@ int BlockAccess::project(int relId, Attribute *record)
   ret = recordBuffer.getRecord(record, nextRecId.slot);
   return SUCCESS;
 }
-
-int BlockAccess::deleteRows(int relId, char attrName[ATTR_SIZE], union Attribute attrVal, int op)
-{
-  RelCacheTable::resetSearchIndex(relId);
-  AttrCacheTable::resetSearchIndex(relId, attrName);
-  RelCatEntry relCat;
-  int ret = RelCacheTable::getRelCatEntry(relId, &relCat);
-  if (ret != SUCCESS)
-    return ret;
-  int numAttrs = relCat.numAttrs;
-  Attribute record[numAttrs];
-  while (BlockAccess::search(relId, record, attrName, attrVal, op) == SUCCESS)
-  {
-    RecId recId;
-    RelCacheTable::getSearchIndex(relId, &recId);
-    RecBuffer blockBuffer(recId.block);
-    struct HeadInfo head;
-    blockBuffer.getHeader(&head);
-    unsigned char slotMap[head.numSlots];
-    blockBuffer.getSlotMap(slotMap);
-    slotMap[recId.slot] = SLOT_UNOCCUPIED;
-    blockBuffer.setSlotMap(slotMap);
-    head.numEntries--;
-    blockBuffer.setHeader(&head);
-    relCat.numRecs--;
-    RelCacheTable::setRelCatEntry(relId, &relCat);
-    for (int i = 0; i < numAttrs; i++)
-    {
-      AttrCatEntry currentAttrCat;
-      AttrCacheTable::getAttrCatEntry(relId, i, &currentAttrCat);
-    }
-  }
-
-  return SUCCESS;
-}
