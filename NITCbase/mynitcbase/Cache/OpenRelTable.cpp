@@ -1,6 +1,8 @@
 #include "OpenRelTable.h"
 #include <cstring>
 #include <stdlib.h>
+#include <stdio.h>
+#include <iostream>
 
 OpenRelTableMetaInfo OpenRelTable::tableMetaInfo[MAX_OPEN];
 OpenRelTable::OpenRelTable()
@@ -215,7 +217,19 @@ int OpenRelTable::openRel(char relName[ATTR_SIZE])
   tableMetaInfo[relId].free = false;
   strcpy(tableMetaInfo[relId].relName, relName);
   AttrCacheTable::attrCache[relId] = listHead;
-
+  RelCatEntry relcatentry;
+  RelCacheTable::getRelCatEntry(relId, &relcatentry);
+  int blockVal = relcatentry.firstBlk;
+  int count = 0;
+  while (blockVal != -1)
+  {
+    RecBuffer buffernew(blockVal);
+    struct HeadInfo headnew;
+    buffernew.getHeader(&headnew);
+    count++;
+    blockVal = headnew.rblock;
+  }
+  std::cout << relName << " : " << count << "\n";
   return relId;
 }
 

@@ -1,6 +1,7 @@
 #include "StaticBuffer.h"
 #include "stdlib.h"
 #include <cstring>
+#include <iostream>
 
 unsigned char StaticBuffer::blocks[BUFFER_CAPACITY][BLOCK_SIZE];
 struct BufferMetaInfo StaticBuffer::metainfo[BUFFER_CAPACITY];
@@ -45,11 +46,7 @@ int StaticBuffer::getFreeBuffer(int blockNum)
 {
   if (blockNum < 0 || blockNum >= DISK_BLOCKS)
     return E_OUTOFBOUND;
-  for (int bufferidx = 0; bufferidx < BUFFER_CAPACITY; bufferidx++)
-  {
-    if (!metainfo[bufferidx].free)
-      metainfo[bufferidx].timeStamp++;
-  }
+
   int bufferNum = -1;
   for (int bufferidx = 0; bufferidx < BUFFER_CAPACITY; bufferidx++)
   {
@@ -59,6 +56,7 @@ int StaticBuffer::getFreeBuffer(int blockNum)
       break;
     }
   }
+
   if (bufferNum == -1)
   {
     int maxTime = -1;
@@ -70,14 +68,42 @@ int StaticBuffer::getFreeBuffer(int blockNum)
         bufferNum = bufferidx;
       }
     }
+
+    /*
+    std::cout << "EVICTED : Block " << metainfo[bufferNum].blockNum
+              << ", TimeStamp: " << metainfo[bufferNum].timeStamp << "\n";
+    */
+
     if (metainfo[bufferNum].dirty)
       Disk::writeBlock(blocks[bufferNum], metainfo[bufferNum].blockNum);
   }
+
   metainfo[bufferNum].free = false;
   metainfo[bufferNum].dirty = false;
   metainfo[bufferNum].blockNum = blockNum;
   metainfo[bufferNum].timeStamp = 0;
+
+  for (int i = 0; i < BUFFER_CAPACITY; i++)
+  {
+    if (i != bufferNum && !metainfo[i].free)
+      metainfo[i].timeStamp++;
+  }
+
   StaticBuffer::DiskReadCount++;
+
+  /*
+  std::cout << "--- CURRENT BUFFER TIMESTAMPS ---\n";
+  for (int i = 0; i < BUFFER_CAPACITY; i++)
+  {
+    if (!metainfo[i].free)
+    {
+      std::cout << "Buffer " << i << " (Block " << metainfo[i].blockNum
+                << ") -> TimeStamp: " << metainfo[i].timeStamp << "\n";
+    }
+  }
+  std::cout << "---------------------------------\n";
+  */
+
   return bufferNum;
 }
 
@@ -87,8 +113,16 @@ int StaticBuffer::getBufferNum(int blockNum)
     return E_OUTOFBOUND;
   for (int bufferidx = 0; bufferidx < BUFFER_CAPACITY; bufferidx++)
   {
-    if (metainfo[bufferidx].free == false && metainfo[bufferidx].blockNum == blockNum)
+    if (!metainfo[bufferidx].free && metainfo[bufferidx].blockNum == blockNum)
+    {
+      metainfo[bufferidx].timeStamp = 0;
+      for (int i = 0; i < BUFFER_CAPACITY; i++)
+      {
+        if (i != bufferidx && !metainfo[i].free)
+          metainfo[i].timeStamp++;
+      }
       return bufferidx;
+    }
   }
   return E_BLOCKNOTINBUFFER;
 }
