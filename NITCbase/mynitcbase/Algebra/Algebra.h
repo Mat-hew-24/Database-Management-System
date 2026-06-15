@@ -5,8 +5,9 @@
 #include "../Schema/Schema.h"
 #include "../define/constants.h"
 
-class Algebra {
- public:
+class Algebra
+{
+public:
   // Insert
   static int insert(char relName[ATTR_SIZE], int numberOfAttributes, char record[][ATTR_SIZE]);
 
@@ -22,6 +23,10 @@ class Algebra {
   // Join
   static int join(char srcRelOne[ATTR_SIZE], char srcRelTwo[ATTR_SIZE], char targetRel[ATTR_SIZE],
                   char attrOne[ATTR_SIZE], char attrTwo[ATTR_SIZE]);
+
+  // static int getMin(char relname[ATTR_SIZE], char attrname[ATTR_SIZE]);
+
+  static int Aggregate(char relname[ATTR_SIZE], char attrname[ATTR_SIZE], char aggregate[4]);
 };
 
-#endif  // NITCBASE_ALGEBRA_H
+#endif // NITCBASE_ALGEBRA_H
