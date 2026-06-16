@@ -452,6 +452,31 @@ int RegexHandler::selectAttrFromJoinHandler() {
   return ret;
 }
 
+int RegexHandler::selectFromOrderbyHandler() {
+  char sourceRelName[ATTR_SIZE];
+  char targetRelName[ATTR_SIZE];
+  char attribute[ATTR_SIZE];
+  attrToTruncatedArray(m[1], sourceRelName);
+  attrToTruncatedArray(m[2], targetRelName);
+  attrToTruncatedArray(m[3], attribute);
+
+  int order = 0; // ASC by default
+  if (m[4].matched) {
+    string orderStr = m[4];
+    for (auto &c : orderStr) c = toupper(c);
+    if (orderStr == "DESC") {
+      order = 1;
+    }
+  }
+
+  int ret = Frontend::select_from_table_orderby(sourceRelName, targetRelName, attribute, order);
+  if (ret == SUCCESS) {
+    cout << "Selected successfully into " << targetRelName << endl;
+  }
+
+  return ret;
+}
+
 int RegexHandler::customFunctionHandler() {
   vector<string> tokens = extractTokens(m[1]);
 
@@ -597,7 +622,8 @@ void printHelp() {
   printf("SELECT * FROM source_relation INTO target_relation; \n\t-creates a relation with the same attributes and records as of source relation\n\n");
   printf("SELECT Attribute1,Attribute2,....FROM source_relation INTO target_relation; \n\t-creates a relation with attributes specified and all records\n\n");
   printf("SELECT * FROM source_relation INTO target_relation WHERE attrname OP value; \n\t-retrieve records based on a condition and insert them into a target relation\n\n");
-  printf("SELECT Attribute1,Attribute2,....FROM source_relation INTO target_relation;\n\t-creates a relation with the attributes specified and inserts those records which satisfy the given condition.\n\n");
+  printf("SELECT Attribute1,Attribute2,....FROM source_relation INTO target_relation WHERE attrname OP value;\n\t-retrieve records based on a condition and insert them into a target relation with the attributes specified\n\n");
+  printf("SELECT * FROM source_relation INTO target_relation ORDER BY attrname [ASC|DESC];\n\t-retrieve records from source relation sorted by the given attribute\n\n");
   printf("SELECT * FROM source_relation1 JOIN source_relation2 INTO target_relation WHERE source_relation1.attribute1 = source_relation2.attribute2; \n\t-creates a new relation with by equi-join of both the source relations\n\n");
   printf("SELECT Attribute1,Attribute2,.. FROM source_relation1 JOIN source_relation2 INTO target_relation WHERE source_relation1.attribute1 = source_relation2.attribute2; \n\t-creates a new relation by equi-join of both the source relations with the attributes specified \n\n");
   printf("echo <any message> \n\t  -echo back the given string. \n\n");

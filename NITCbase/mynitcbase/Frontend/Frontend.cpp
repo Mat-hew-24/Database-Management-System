@@ -152,3 +152,21 @@ int Frontend::select_avg_attr_from_table(char relname[ATTR_SIZE], char attrName[
 {
   return Algebra::Aggregate(relname, attrName, "AVG");
 }
+
+int Frontend::select_from_table_orderby(char relname_source[ATTR_SIZE], char relname_target[ATTR_SIZE],
+                                        char attrname[ATTR_SIZE], int order)
+{
+  int ret = Algebra::project(relname_source, TEMP);
+  if (ret != SUCCESS)
+    return ret;
+  int tempRelId = OpenRelTable::openRel(TEMP);
+  if (tempRelId < 0)
+  {
+    Schema::deleteRel(TEMP);
+    return tempRelId;
+  }
+  ret = Algebra::sort(TEMP, relname_target, attrname, order);
+  OpenRelTable::closeRel(tempRelId);
+  Schema::deleteRel(TEMP);
+  return ret;
+}

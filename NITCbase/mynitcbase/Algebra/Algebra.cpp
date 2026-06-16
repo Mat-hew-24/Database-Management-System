@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <vector>
+#include <algorithm>
 
 #include "../BlockAccess/BlockAccess.h"
 #include "../Cache/RelCacheTable.h"
@@ -246,6 +248,77 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
   printf("Disk accesses: %d\n", after - before);
 
   Schema::closeRel(targetRel);
+  return SUCCESS;
+}
+
+int Algebra::sort(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attrName[ATTR_SIZE], int order)
+{
+  int srcRelId = OpenRelTable::getRelId(srcRel);
+  if (srcRelId == E_RELNOTOPEN)
+    return E_RELNOTOPEN;
+  AttrCatEntry sortAttr;
+  if (AttrCacheTable::getAttrCatEntry(srcRelId, attrName, &sortAttr) != SUCCESS)
+    return E_ATTRNOTEXIST;
+  RelCatEntry relCat;
+  if (RelCacheTable::getRelCatEntry(srcRelId, &relCat) != SUCCESS)
+    return E_RELNOTOPEN;
+  int src_nAttrs = relCat.numAttrs;
+  char attrNames[src_nAttrs][ATTR_SIZE];
+  int attrTypes[src_nAttrs];
+  for (int i = 0; i < src_nAttrs; i++)
+  {
+    AttrCatEntry attrEntry;
+    if (AttrCacheTable::getAttrCatEntry(srcRelId, i, &attrEntry) != SUCCESS)
+      return E_ATTRNOTEXIST;
+    strcpy(attrNames[i], attrEntry.attrName);
+    attrTypes[i] = attrEntry.attrType;
+  }
+  std::vector<std::vector<Attribute>> records;
+  RelCacheTable::resetSearchIndex(srcRelId);
+  Attribute record[src_nAttrs];
+  while (BlockAccess::project(srcRelId, record) == SUCCESS)
+  {
+    std::vector<Attribute> row(record, record + src_nAttrs);
+    records.push_back(row);
+  }
+  int sortOffset = sortAttr.offset;
+  int sortType = sortAttr.attrType;
+  std::sort(records.begin(), records.end(), [&](const std::vector<Attribute> &a, const std::vector<Attribute> &b) { // * use lambda
+    if (sortType == NUMBER)
+      return order == 0 ? a[sortOffset].nVal < b[sortOffset].nVal
+                        : a[sortOffset].nVal > b[sortOffset].nVal;
+    else
+      return order == 0 ? strcmp(a[sortOffset].sVal, b[sortOffset].sVal) < 0
+                        : strcmp(a[sortOffset].sVal, b[sortOffset].sVal) > 0;
+  });
+
+  int ret = Schema::createRel(targetRel, src_nAttrs, attrNames, attrTypes);
+  if (ret != SUCCESS)
+    return ret;
+
+  int targetRelId = OpenRelTable::openRel(targetRel);
+  if (targetRelId < 0)
+  {
+    Schema::deleteRel(targetRel);
+    return targetRelId;
+  }
+
+  for (auto &row : records)
+  {
+    Attribute insertRecord[src_nAttrs];
+    for (int i = 0; i < src_nAttrs; i++)
+      insertRecord[i] = row[i];
+
+    ret = BlockAccess::insert(targetRelId, insertRecord);
+    if (ret != SUCCESS)
+    {
+      OpenRelTable::closeRel(targetRelId);
+      Schema::deleteRel(targetRel);
+      return ret;
+    }
+  }
+
+  OpenRelTable::closeRel(targetRelId);
   return SUCCESS;
 }
 

@@ -28,6 +28,7 @@
 #define SELECT_ATTR_FROM_WHERE_CMD "\\s*SELECT\\s+((?:[#A-Za-z0-9_-]+\\s*,\\s*)*(?:[#A-Za-z0-9_-]+))\\s+FROM\\s+([A-Za-z0-9_-]+)\\s+INTO\\s+([A-Za-z0-9_-]+)\\s+WHERE\\s+([#A-Za-z0-9_-]+)\\s*(<|<=|>|>=|=|!=)\\s*([A-Za-z0-9_-]+|([0-9]+(\\.)[0-9]+))\\s*;?"
 #define SELECT_FROM_JOIN_CMD "\\s*SELECT\\s+\\*\\s+FROM\\s+([A-Za-z0-9_-]+)\\s+JOIN\\s+([A-Za-z0-9_-]+)\\s+INTO\\s+([A-Za-z0-9_-]+)\\s+WHERE\\s+([A-Za-z0-9_-]+)\\s*\\.([#A-Za-z0-9_-]+)\\s*\\=\\s*([A-Za-z0-9_-]+)\\s*\\.([#A-Za-z0-9_-]+)\\s*;?"
 #define SELECT_ATTR_FROM_JOIN_CMD "\\s*SELECT\\s+((?:[#A-Za-z0-9_-]+\\s*,\\s*)*(?:[#A-Za-z0-9_-]+))\\s+FROM\\s+([A-Za-z0-9_-]+)\\s+JOIN\\s+([A-Za-z0-9_-]+)\\s+INTO\\s+([A-Za-z0-9_-]+)\\s+WHERE\\s+([A-Za-z0-9_-]+)\\s*\\.([#A-Za-z0-9_-]+)\\s*\\=\\s*([A-Za-z0-9_-]+)\\s*\\.([#A-Za-z0-9_-]+)\\s*;?"
+#define SELECT_FROM_ORDERBY_CMD "\\s*SELECT\\s+\\*\\s+FROM\\s+([A-Za-z0-9_-]+)\\s+INTO\\s+([A-Za-z0-9_-]+)\\s+ORDER\\s+BY\\s+([#A-Za-z0-9_-]+)\\s*(ASC|DESC)?\\s*;?"
 #define INSERT_SINGLE_CMD "\\s*INSERT\\s+INTO\\s+([A-Za-z0-9_-]+)\\s+VALUES\\s*\\(\\s*((?:(?:[A-Za-z0-9_-]+|[0-9]+\\.[0-9]+)\\s*,\\s*)*(?:[A-Za-z0-9_-]+|[0-9]+\\.[0-9]+))\\s*\\)\\s*;?"
 #define INSERT_MULTIPLE_CMD "\\s*INSERT\\s+INTO\\s+([A-Za-z0-9_-]+)\\s+VALUES\\s+FROM\\s+([a-zA-Z0-9_-]+\\.csv)\\s*;?"
 #define CUSTOM_CMD "\\s*FUNCTION\\s+([A-Za-z,#0-9\\s()_-]+)\\s*;?"
@@ -60,6 +61,7 @@ class RegexHandler {
       {REGEX(SELECT_ATTR_FROM_WHERE_CMD), &RegexHandler::selectAttrFromWhereHandler},
       {REGEX(SELECT_FROM_JOIN_CMD), &RegexHandler::selectFromJoinHandler},
       {REGEX(SELECT_ATTR_FROM_JOIN_CMD), &RegexHandler::selectAttrFromJoinHandler},
+      {REGEX(SELECT_FROM_ORDERBY_CMD), &RegexHandler::selectFromOrderbyHandler},
       {REGEX(CUSTOM_CMD), &RegexHandler::customFunctionHandler},
   };
 
@@ -88,6 +90,7 @@ class RegexHandler {
   int selectAttrFromWhereHandler();
   int selectFromJoinHandler();
   int selectAttrFromJoinHandler();
+  int selectFromOrderbyHandler();
   int customFunctionHandler();
 
  public:
